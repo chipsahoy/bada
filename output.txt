@@ -1,0 +1,39 @@
+Printing symbol table with some open and some closed scopes.
+
+Begin symbol table.
+closed scopes:
+Scope 1
+function: a
+
+open scopes:
+Scope 0
+variable: a
+
+End symbol table.
+
+Printing at end of program.
+
+Begin symbol table.
+closed scopes:
+Scope 1
+function: a
+
+Scope 2
+
+Scope 3
+function: AA
+function: BB
+function: a
+function: a_longer_token
+function: aa
+function: abcd
+function: b
+function: bb
+function: c
+function: d
+
+Scope 0
+variable: a
+
+End symbol table.
+

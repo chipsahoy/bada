@@ -1,0 +1,18 @@
+"literal"
+FALSE
+True
+9876
+5.43210
+
+integer
+float
+boolean
+
++OR-
+* aNd /
+< = >
+:= ; : ()
+PROCEDURE is dECLARE Constant
+NOT If then while loop
+put put_line get
+begin end
