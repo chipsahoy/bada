@@ -9,7 +9,7 @@ float
 boolean
 
 +OR-
-* aNd /
+* aNd / mod
 < = >
 := ; : ()
 PROCEDURE is dECLARE Constant

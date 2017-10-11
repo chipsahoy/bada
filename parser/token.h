@@ -56,10 +56,11 @@ private:
 	std::string _lexeme;
 
 public:
-	Token(TokenType t, std::string lex, int line);
+	Token(TokenType t, std::string lex);
 	TokenType type() const; // the type of the token.
 	std::string lexeme() const; // the lex string of the token.
 	int line() const; // the line number of the token.
+	void line(int lineNumber);
 	// ToString provides a human readable view of the token.
 	std::string ToString() const;
 	// serialization operators so we can read/write Token to file.

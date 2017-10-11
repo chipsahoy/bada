@@ -23,6 +23,11 @@
 // files at the same time. The key to making this work is the GetChar function
 // which is a lambda. It captures the line number and push back variables from
 // the scan() context.
+//
+// line numbers are handled entirely here and not at all in GetToken. The
+// reason is GetToken is in the business of scanning BADA tokens. Line numbers 
+// aren't a part of that business. This scan() function already is touching
+// every file character exactly once. Counting line numbers is a good fit here.
 
 static void scan(std::string filename)
 {
@@ -33,9 +38,8 @@ static void scan(std::string filename)
 	}
 
 	// GetChar increments lineNumber when it pulls a new line.
-	// GetToken then embeds the current line into new tokens.
 	int lineNumber = 1;
-	// GetToken sets pushBack to true to reuse the previous character.
+	// GetToken calls PushBack to reuse the previous character.
 	bool pushBack = false;
 	// remember one character history for backtracking.
 	int previousChar;
@@ -63,6 +67,10 @@ static void scan(std::string filename)
 		return ch;
 	};
 
+	auto PushBack = [&]() {
+		pushBack = true;
+	};
+
 	// Let the user know which file is being scanned now.
 	std::cout << "Scanning " << filename << std::endl;
 	// open a file to write the tokens into.
@@ -71,7 +79,14 @@ static void scan(std::string filename)
 	int errorCount = 0;
 
 	while (true) {
-		Token token = GetToken(GetChar, lineNumber, pushBack);
+		Token token = GetToken(GetChar, PushBack);
+		// add the line number to the token.
+		int line = lineNumber;
+		if (pushBack) {
+			if (('\r' == previousChar) | ('\n' == previousChar))
+				line--;
+		}
+		token.line(line);
 		// display this token on string.
 		std::cout << token.ToString() << std::endl;
 

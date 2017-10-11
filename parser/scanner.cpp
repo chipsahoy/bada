@@ -61,15 +61,15 @@ namespace {
 	// input: an identifier string in any case
 	// return: a token of the proper type
 
-	Token MakeIdOrKeyword(std::string id, int line)
+	Token MakeIdOrKeyword(std::string id)
 	{
 		// take care of case here. make all identifiers lowercase.
 		std::transform(id.begin(), id.end(), id.begin(), tolower);
 		auto it = keywords.find(id);
 		if (it != keywords.end()) {
-			return Token(it->second, id, line);
+			return Token(it->second, id);
 		}
-		return Token(TokenType::identifier, id, line);
+		return Token(TokenType::identifier, id);
 	}
 }
 
@@ -81,12 +81,11 @@ namespace {
 // lineCurrent, the line number in the input file. Updated as characters are
 // scanned.
 //
-// return: a valid token or an error token. Also pushBack is an output
+// return: a valid token or an error token. Also PushBack is an output
 // parameter that signals the last character read needs to be processed in
 // the next token.
 
-Token GetToken(std::function<int()> GetChar, const int& lineCurrent, 
-		bool& pushBack)
+Token GetToken(std::function<int()> GetChar, std::function<void()> PushBack)
 {
 	// characters for the lexeme accumulate in buffer. Initializing it to 0
 	// ensures it will always be null terminated.
@@ -95,9 +94,6 @@ Token GetToken(std::function<int()> GetChar, const int& lineCurrent,
 	int index = 0;
 	// state is the current state.
 	State state = State::start;
-	// line is the line number the token started on. Parsing can change
-	// lineCurrent so we have to remember where we started.
-	int line = lineCurrent;
 
 	// This loop runs the state machine.
 	// There is one character read each pass through the loop.
@@ -113,7 +109,7 @@ Token GetToken(std::function<int()> GetChar, const int& lineCurrent,
 			// for recovery we start fresh after ignoring these 256.
 			buffer[255] = 0;
 			std::string msg = "token too long";
-			return Token(TokenType::error, msg, line);
+			return Token(TokenType::error, msg);
 		}
 
 		// ch is the one character we'll deal with this pass.
@@ -126,10 +122,9 @@ Token GetToken(std::function<int()> GetChar, const int& lineCurrent,
 			// characters there's a transition to a different state.
 
 		case State::start: {
-			line = lineCurrent; // remember the line number we start at.
 			switch (ch) {
 			case EOF:
-				return Token(TokenType::eof, "", line);
+				return Token(TokenType::eof, "");
 
 			case ' ':
 			case '\t':
@@ -139,25 +134,24 @@ Token GetToken(std::function<int()> GetChar, const int& lineCurrent,
 				continue;
 
 			case '+':
-				return Token(TokenType::op_add, std::string(1, ch), line);
+				return Token(TokenType::op_add, std::string(1, ch));
 
 			case '*':
 			case '/':
-				return Token(TokenType::op_multpily, std::string(1, ch), line);
+				return Token(TokenType::op_multpily, std::string(1, ch));
 
 			case '<':
 			case '>':
 			case '=':
-				return Token(TokenType::op_relational, std::string(1, ch), 
-					line);
+				return Token(TokenType::op_relational, std::string(1, ch));
 
 			case ';':
-				return Token(TokenType::semicolon, std::string(1, ch), line);
+				return Token(TokenType::semicolon, std::string(1, ch));
 
 			case '(':
-				return Token(TokenType::left_paren, std::string(1, ch), line);
+				return Token(TokenType::left_paren, std::string(1, ch));
 			case ')':
-				return Token(TokenType::right_paren, std::string(1, ch), line);
+				return Token(TokenType::right_paren, std::string(1, ch));
 
 			default: {
 				// this token might be more than one char. Needs a new state.
@@ -189,7 +183,7 @@ Token GetToken(std::function<int()> GetChar, const int& lineCurrent,
 				// ch isn't a valid beginning for a token.
 				std::string msg = "syntax error: ";
 				return Token(TokenType::error, 
-					msg + static_cast<char>(ch), line);
+					msg + static_cast<char>(ch));
 			}
 			}
 			break;
@@ -198,7 +192,7 @@ Token GetToken(std::function<int()> GetChar, const int& lineCurrent,
 		// State id
 		// transition in: from start on alpha, from id_underscore on alpha
 		// transition out: to id_underscore on underscore
-		// final: on not(alpha, digit). must pushback last.
+		// final: on not(alpha, digit). must PushBack last.
 
 		case State::id: {
 			bool more = false;
@@ -208,8 +202,8 @@ Token GetToken(std::function<int()> GetChar, const int& lineCurrent,
 				state = State::id_underscore;
 			}
 			if (!more) {
-				pushBack = true;
-				return MakeIdOrKeyword(buffer, line);
+				PushBack();
+				return MakeIdOrKeyword(buffer);
 			}
 			buffer[index++] = static_cast<char>(ch);
 			break;
@@ -226,15 +220,15 @@ Token GetToken(std::function<int()> GetChar, const int& lineCurrent,
 				state = State::id;
 				break;
 			}
-			pushBack = true;
+			PushBack();
 			std::string msg = "illegal identifier: ";
-			return Token(TokenType::error, msg + buffer, line);
+			return Token(TokenType::error, msg + buffer);
 		}
 
 		// State number
 		// transition in: from start on digit
 		// transition out: to number_dot on .
-		// final: on not(dot, digit). must pushback last.
+		// final: on not(dot, digit). must PushBack last.
 
 		case State::number: {
 			if (isdigit(ch)) {
@@ -246,8 +240,8 @@ Token GetToken(std::function<int()> GetChar, const int& lineCurrent,
 				state = State::number_dot;
 				break;
 			}
-			pushBack = true;
-			return Token(TokenType::literal_integer, buffer, line);
+			PushBack();
+			return Token(TokenType::literal_integer, buffer);
 		}
 		// State number_dot
 		// transition in: from number on .
@@ -261,40 +255,40 @@ Token GetToken(std::function<int()> GetChar, const int& lineCurrent,
 				break;
 			}
 			std::string msg = "illegal number: ";
-			pushBack = true;
-			return Token(TokenType::error, msg + buffer, line);
+			PushBack();
+			return Token(TokenType::error, msg + buffer);
 		}
 
 		// State real
 		// transition in: from number_dot on digit
-		// final: on not digit. must pushback last.
+		// final: on not digit. must PushBack last.
 
 		case State::real: {
 			if (isdigit(ch)) {
 				buffer[index++] = static_cast<char>(ch);
 				break;
 			}
-			pushBack = true;
-			return Token(TokenType::literal_real, buffer, line);
+			PushBack();
+			return Token(TokenType::literal_real, buffer);
 		}
 
 		// State quote
 		// transition in: from start on "
-		// final: on ". no pushback.
-		// error: EOF or newline. pushback EOF.
+		// final: on ". no PushBack.
+		// error: EOF or newline. PushBack EOF.
 
 		case State::quote: {
 			switch (ch) {
 			case '"': {
 				return Token(TokenType::literal_string, 
-					std::string(buffer, index), line);
+					std::string(buffer, index));
 			}
 			case EOF:
-				pushBack = true;
+				PushBack();
 			case '\n':
 			case '\r':
 				std::string msg = "missing end quote";
-				return Token(TokenType::error, msg, line);
+				return Token(TokenType::error, msg);
 			}
 			buffer[index++] = static_cast<char>(ch);
 			break;
@@ -303,12 +297,12 @@ Token GetToken(std::function<int()> GetChar, const int& lineCurrent,
 		// State dash
 		// transition in: from start on -
 		// transition out: to comment on -
-		// final: not -. must pushback.
+		// final: not -. must PushBack.
 
 		case State::dash: {
 			if ('-' != ch) {
-				pushBack = true;
-				return Token(TokenType::op_add, "-", line);
+				PushBack();
+				return Token(TokenType::op_add, "-");
 			}
 			state = State::comment;
 			break;
@@ -317,14 +311,14 @@ Token GetToken(std::function<int()> GetChar, const int& lineCurrent,
 		// State comment
 		// transition in: from dash on -
 		// final: on newline or EOF. Merely reset state, there is no comment
-		// token. must pushback (to not lose EOF).
+		// token. must PushBack (to not lose EOF).
 
 		case State::comment: {
 			switch (ch) {
 			case EOF:
 			case '\n':
 			case '\r':
-				pushBack = true;
+				PushBack();
 				state = State::start;
 				break;
 			}
@@ -333,14 +327,14 @@ Token GetToken(std::function<int()> GetChar, const int& lineCurrent,
 
 		// State colon
 		// transition in: from start on :
-		// final: on = no pushback. on not = must pushback.
+		// final: on = no PushBack. on not = must PushBack.
 
 		case State::colon: {
 			if ('=' == ch) {
-				return Token(TokenType::op_assignment, ":=", line);
+				return Token(TokenType::op_assignment, ":=");
 			}
-			pushBack = true;
-			return Token(TokenType::colon, ":", line);
+			PushBack();
+			return Token(TokenType::colon, ":");
 		}
 		}
 	}

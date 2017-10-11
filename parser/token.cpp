@@ -2,9 +2,8 @@
 
 #include "token.h"
 
-// tokens are immutable. the constructor initializes and then it's read only.
-Token::Token(TokenType t, std::string lex, int line) : 
-	_type(t), _lexeme(lex), _lineNumber(line)
+Token::Token(TokenType t, std::string lex) : 
+	_type(t), _lexeme(lex), _lineNumber(0)
 {
 }
 
@@ -19,6 +18,10 @@ std::string Token::lexeme() const
 	return _lexeme;
 }
 
+void Token::line(int lineNumber)
+{
+	_lineNumber = lineNumber;
+}
 int Token::line() const
 {
 	return _lineNumber;
