@@ -104,6 +104,8 @@ Token Scanner::GetToken()
 			lineNumber++;
 		if ('\r' == ch)
 			lineNumber++;
+		// cache the latest character for backtracking.
+		previousChar = ch;
 
 		// this is the DFA, in C++
 		switch (state) {

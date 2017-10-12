@@ -1,7 +1,7 @@
 #include <string>
 #include <iostream>
 #include <fstream>
-#pragma warning(disable:4996) // disclamer: crt file functions are dangerous!
+#pragma warning(disable:4996) // crt file functions are dangerous!
 
 #include "scanner.h"
 

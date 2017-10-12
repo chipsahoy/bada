@@ -21,7 +21,6 @@ enum class TokenType {
 	op_multiply,
 	op_relational,
 
-
 	op_assignment,
 	semicolon,
 	colon,
@@ -42,19 +41,16 @@ enum class TokenType {
 	tok_get,
 	tok_begin,
 	tok_end,
-
 };
 
 // this is the Token class. It remembers the type and lexeme.
 // It knows how to serialize itself and print itself.
-
 class Token final
 {
 private:
 	TokenType type;
 	int lineNumber;
 	std::string lexeme;
-
 public:
 	Token(TokenType t, std::string lex, int line);
 	TokenType Type() const; // the type of the token.

@@ -37,8 +37,6 @@ int Scanner::GetChar()
 		// todo: notify and handle error in larger program.
 		perror("*** error scanning file.\n");
 	}
-	// cache the latest character for backtracking.
-	previousChar = ch;
 	return ch;
 }
 
