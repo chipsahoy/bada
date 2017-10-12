@@ -2,37 +2,33 @@
 
 #include "token.h"
 
-Token::Token(TokenType t, std::string lex) : 
-	_type(t), _lexeme(lex), _lineNumber(0)
+Token::Token(TokenType t, std::string lex, int line) : 
+	type(t), lexeme(lex), lineNumber(line)
 {
 }
 
 // getters
-TokenType Token::type() const
+TokenType Token::Type() const
 {
-	return _type;
+	return type;
 }
 
-std::string Token::lexeme() const
+std::string Token::Lexeme() const
 {
-	return _lexeme;
+	return lexeme;
 }
 
-void Token::line(int lineNumber)
+int Token::Line() const
 {
-	_lineNumber = lineNumber;
-}
-int Token::line() const
-{
-	return _lineNumber;
+	return lineNumber;
 }
 
 std::string Token::ToString() const
 {
 	std::ostringstream ss;
-	ss << "line " << _lineNumber << ": " << static_cast<int>(_type);
-	if (!_lexeme.empty())
-		ss << " \"" << _lexeme << "\"";
+	ss << "line " << lineNumber << ": " << static_cast<int>(type);
+	if (!lexeme.empty())
+		ss << " \"" << lexeme << "\"";
 	return ss.str();
 }
 
@@ -42,19 +38,19 @@ std::string Token::ToString() const
 
 std::ostream & operator<<(std::ostream& output, const Token& token)
 {
-	output << static_cast<int>(token._type) << "\t" << token._lineNumber << 
-		"\t" << token._lexeme << '\n';
+	output << static_cast<int>(token.type) << "\t" << token.lineNumber << 
+		"\t" << token.lexeme << '\n';
 	return output;
 }
 
-// there is no error handling yet, but it's also unused code. 
+// there is no error handling reading from a stream, but it's also unused code. 
 // I'm going to wait to see how it is used
 // and then add appropriate error handling.
 std::istream & operator>>(std::istream& input, Token& token)
 {
 	int type;
-	input >> type >> token._lineNumber;
-	std::getline(input, token._lexeme);
-	token._type = static_cast<TokenType>(type);
+	input >> type >> token.lineNumber;
+	std::getline(input, token.lexeme);
+	token.type = static_cast<TokenType>(type);
 	return input;
 }

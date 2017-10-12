@@ -18,7 +18,7 @@ enum class TokenType {
 	tok_boolean,
 
 	op_add,
-	op_multpily,
+	op_multiply,
 	op_relational,
 
 
@@ -51,16 +51,15 @@ enum class TokenType {
 class Token final
 {
 private:
-	TokenType _type;
-	int _lineNumber;
-	std::string _lexeme;
+	TokenType type;
+	int lineNumber;
+	std::string lexeme;
 
 public:
-	Token(TokenType t, std::string lex);
-	TokenType type() const; // the type of the token.
-	std::string lexeme() const; // the lex string of the token.
-	int line() const; // the line number of the token.
-	void line(int lineNumber);
+	Token(TokenType t, std::string lex, int line);
+	TokenType Type() const; // the type of the token.
+	std::string Lexeme() const; // the lex string of the token.
+	int Line() const; // the line number of the token.
 	// ToString provides a human readable view of the token.
 	std::string ToString() const;
 	// serialization operators so we can read/write Token to file.
