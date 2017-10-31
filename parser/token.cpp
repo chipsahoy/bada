@@ -36,6 +36,151 @@ std::string Token::ToString() const
 // if strings could have newlines.) The deciding factor for now is the ease
 // of reading the text files produced vs the dificulty of reading binary.
 
+std::string DescribeTokenType(TokenType type)
+{
+	std::string description;
+	switch (type) {
+	case TokenType::eof:
+		description = "EOF";
+		break;
+
+	case TokenType::error:
+		description = "scanner error";
+		break;
+
+	case TokenType::identifier:
+		description = "identifier";
+		break;
+
+
+	case TokenType::literal_string:
+		description = "string";
+		break;
+
+	case TokenType::literal_boolean:
+		description = "boolean";
+		break;
+
+	case TokenType::literal_integer:
+		description = "number";
+		break;
+
+	case TokenType::literal_real:
+		description = "number";
+		break;
+
+
+	case TokenType::tok_integer:
+		description = "type";
+		break;
+
+	case TokenType::tok_real:
+		description = "type";
+		break;
+
+	case TokenType::tok_boolean:
+		description = "type";
+		break;
+
+
+	case TokenType::op_add:
+		description = "math operator";
+		break;
+
+	case TokenType::op_multiply:
+		description = "math operator";
+		break;
+
+	case TokenType::op_relational:
+		description = "relational operator";
+		break;
+
+
+	case TokenType::op_assignment:
+		description = "assignment operator";
+		break;
+
+	case TokenType::semicolon:
+		description = "semicolon";
+		break;
+
+	case TokenType::colon:
+		description = "colon";
+		break;
+
+	case TokenType::left_paren:
+		description = "left parenthesis";
+		break;
+
+	case TokenType::right_paren:
+		description = "right parenthesis";
+		break;
+
+
+	case TokenType::tok_procedure:
+		description = "PROC";
+		break;
+
+	case TokenType::tok_is:
+		description = "IS";
+		break;
+
+	case TokenType::tok_declare:
+		description = "DECLARE";
+		break;
+
+	case TokenType::tok_constant:
+		description = "CONST";
+		break;
+
+	case TokenType::op_not:
+		description = "NOT";
+		break;
+
+	case TokenType::tok_if:
+		description = "IF";
+		break;
+
+	case TokenType::tok_then:
+		description = "THEN";
+		break;
+
+	case TokenType::tok_while:
+		description = "WHILE";
+		break;
+
+	case TokenType::tok_loop:
+		description = "LOOP";
+		break;
+
+	case TokenType::tok_put:
+		description = "PUT";
+		break;
+
+	case TokenType::tok_put_line:
+		description = "PUTLINE";
+		break;
+
+	case TokenType::tok_get:
+		description = "GET";
+		break;
+
+	case TokenType::tok_begin:
+		description = "BEGIN";
+		break;
+
+	case TokenType::tok_end:
+		description = "END";
+		break;
+
+	default:
+		description = "*** ADD DESCRIPTION";
+		break;
+
+	}
+	return description;
+}
+
 std::ostream & operator<<(std::ostream& output, const Token& token)
 {
 	output << static_cast<int>(token.type) << "\t" << token.lineNumber << 

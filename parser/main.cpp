@@ -4,61 +4,48 @@
 #pragma warning(disable:4996) // crt file functions are dangerous!
 
 #include "scanner.h"
+#include "parser.h"
 
-// Files are opened and fed to the tokenizer.
-// The tokens are written to the screen and a file. Then an error count is
-// reported.
 
-static void scan(std::string filename)
+// process() parse one file and write the results to an output file.
+//
+static void process(std::string filename)
 {
-
 	FILE* file = fopen(filename.c_str(), "r");
 	if (nullptr == file) {
 		std::cout << "unable to open file " << filename << std::endl;
 		return;
 	}
-	auto GetToken = CreateScanner(file);
 	// Let the user know which file is being scanned now.
-	std::cout << "Scanning " << filename << std::endl;
+	std::cout << "Parsing " << filename << std::endl;
 
-	// open a file to write the tokens into.
-	std::ofstream output(filename + ".tok");
+	// open a file to write the tree into.
+	std::ofstream output(filename + ".tree");
+	output << "derivation of " << filename << std::endl;
+	auto GetToken = CreateScanner(file);
+	std::string error;
+	std::string tree = parse(GetToken, error);
 
-	int errorCount = 0;
-
-	while (true) {
-		Token token = GetToken();
-		// display this token on screen.
-		std::cout << token.ToString() << std::endl;
-
-		if (token.Type() == TokenType::error) {
-			errorCount++;
-		}
-		else {
-			// write the token to the token file.
-			// but only if it isn't an error.
-			output << token;
-		}
-		if (token.Type() == TokenType::eof) 
-			break;
+	if (error.size() == 0) 
+		output << tree << std::endl;
+	else 
+	{
+		std::cout << "*** " << error << std::endl;
+		output << "*** " << error << std::endl;
 	}
+
 	fclose(file);
-
-	// let the user know the file is finished and the results.
-	std::cout << filename << " " << errorCount << 
-		((1 == errorCount) ? " error." : " errors.") << std::endl;
-
 }
 
-// main will attempt to scan() every file name passed in on the command line.
+// main will attempt to parse() every file name passed in on the command line.
 
 int main(int argc, char* argv[])
 {
 	if (1 == argc) 
-		std::cout << "usage: scanner filename\n";
+		std::cout << "usage: parser filename\n";
 	
 	for(int i = 1; i < argc; i++)
-		scan(argv[i]);
+		process(argv[i]);
 
 	return 0;
 }

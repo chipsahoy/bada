@@ -145,11 +145,14 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="parser.cpp" />
     <ClCompile Include="scanner.cpp" />
+    <ClCompile Include="Source.cpp" />
     <ClCompile Include="tokenizer.cpp" />
     <ClCompile Include="token.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="parser.h" />
     <ClInclude Include="scanner.h" />
     <ClInclude Include="scanner_p.h" />
     <ClInclude Include="token.h" />

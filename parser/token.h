@@ -42,7 +42,7 @@ enum class TokenType {
 	tok_begin,
 	tok_end,
 };
-
+std::string DescribeTokenType(TokenType token);
 // this is the Token class. It remembers the type and lexeme.
 // It knows how to serialize itself and print itself.
 class Token final
