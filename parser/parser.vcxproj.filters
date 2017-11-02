@@ -13,9 +13,6 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
-    <Filter Include="tests">
-      <UniqueIdentifier>{5a985dd4-6873-40e5-b3e4-4b96074e36a1}</UniqueIdentifier>
-    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="token.cpp">
@@ -36,6 +33,15 @@
     <ClCompile Include="Source.cpp">
       <Filter>Header Files</Filter>
     </ClCompile>
+    <ClCompile Include="SymbolTable.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ScopeTable.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Symbol.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="token.h">
@@ -50,27 +56,14 @@
     <ClInclude Include="parser.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-  </ItemGroup>
-  <ItemGroup>
-    <Text Include="legal.txt">
-      <Filter>tests</Filter>
-    </Text>
-    <Text Include="empty.txt">
-      <Filter>tests</Filter>
-    </Text>
-    <Text Include="errors.txt">
-      <Filter>tests</Filter>
-    </Text>
-    <Text Include="keywords.txt">
-      <Filter>tests</Filter>
-    </Text>
-    <Text Include="caesar.txt">
-      <Filter>tests</Filter>
-    </Text>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="binary.bin">
-      <Filter>tests</Filter>
-    </None>
+    <ClInclude Include="ScopeTable.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Symbol.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SymbolTable.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

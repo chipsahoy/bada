@@ -17,6 +17,7 @@ public:
 	ScopeTable(int scopeNumber);
 	~ScopeTable();
 
+	int number() const;
 	// precondition: symbol.name() is not a key in _symbols.
 	// precondition: symbol is not null.
 	// postcondition: symbol is added to _symbols.

@@ -11,14 +11,15 @@ ScopeTable::~ScopeTable()
 {
 }
 
+int ScopeTable::number() const
+{
+	return _scopeNumber;
+}
+
 void ScopeTable::AddSymbol(std::shared_ptr<Symbol> symbol)
 {
 	if (nullptr == symbol)
 		throw "failure: added a null symbol";
-	auto it = _symbols.find(symbol->name());
-	if (_symbols.end() != it) {
-		throw "duplicate symbol: " + symbol->name();
-	}
 
 	// adding to a map is easy thanks to operator [].
 	_symbols[symbol->name()] = symbol;

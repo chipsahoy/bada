@@ -3,10 +3,12 @@
 
 #include <string>
 #include <vector>
-#include <deque>
 #include <memory>
+#include <map>
+
 #include "Symbol.h"
 #include "ScopeTable.h"
+#include "token.h"
 
 // This class is the interface to symbol tables for the compiler.
 // It keeps a stack of currently open scopes. The ScopeTable class
@@ -26,7 +28,7 @@ private:
 	// use a vector for easy enumeration.
 	std::vector<std::shared_ptr<ScopeTable> > _scopes;
 	// These are the inactive scopes, for reference.
-	std::deque<std::shared_ptr<ScopeTable> > _oldScopes;
+	std::map<int, std::shared_ptr<ScopeTable> > _oldScopes;
 public:
 	SymbolTable();
 	~SymbolTable();
@@ -35,7 +37,8 @@ public:
 	// precondition: name is not a symbol in the current scope.
 	// postcondition: name is a symbol in the current scope.
 	// returns: a pointer to the derived class implied by type.
-	std::shared_ptr<Symbol> AddSymbol(const std::string& name, SymbolType t);
+	std::shared_ptr<Symbol> AddSymbol(const std::string& name, TokenType t,
+		int location, bool constant);
 
 	// precondition: there is a current scope open.
 	// returns: a pointer to the symbol record 

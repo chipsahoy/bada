@@ -5,6 +5,7 @@
 // add source line numbers for better errors.
 #define match(x) _match(__LINE__, (x))
 #define make_error(x) _make_error(__LINE__, (x))
+#define non_fatal(x) _non_fatal(__LINE__, (x))
 
 namespace {
 
@@ -16,6 +17,9 @@ namespace {
 	private:
 		// State: 
 		//
+
+		int _errorCount;
+
 		// _token is the current token. Keeping it here in the base class
 		// guarantees that it only changes on a successful match() because
 		// _token is private.
@@ -38,6 +42,8 @@ namespace {
 		std::stringstream _output;
 
 	protected:
+
+		SymbolTable symbols;
 
 		// the derived class uses token() to get read access to the current.
 		//
@@ -100,6 +106,15 @@ namespace {
 			throw ss.str();
 		}
 
+		void _non_fatal(int line, std::string message)
+		{
+			std::stringstream ss;
+			ss << "\nerror source line " << token().Line() <<
+				" parser line " << line << ' ' << message << 
+				"'" << token().Lexeme() << "'\n";
+			_errorCount++;
+			_output << ss.str();
+		}
 	public:
 		
 		// The Parser constructor initializes all state.
@@ -111,6 +126,7 @@ namespace {
 			_token(TokenType::error, "", 0),
 			FirstRule(firstrule),
 			_lastLine(0),
+			_errorCount(0),
 			_lastRule(0)
 		{
 		}
@@ -124,8 +140,11 @@ namespace {
 			{
 				error = "";
 				_token = GetToken();
+				symbols.BeginScope();
 				FirstRule();
+				symbols.EndScope();
 				match(TokenType::eof);
+				_output << std::endl << symbols.ToString();
 			}
 			catch (std::string errCaught) 
 			{
@@ -139,12 +158,36 @@ namespace {
 	// of the BADA language.
 	class BadaParser : public Parser 
 	{
+		int _nextLocation;
 	public:
 		BadaParser(std::function<Token()> gettoken) :
-			Parser(gettoken, std::bind(&BadaParser::program, this))
+			Parser(gettoken, std::bind(&BadaParser::program, this)),
+			_nextLocation(0)
 		{
 		}
 	private:
+
+		int location(TokenType type)
+		{
+			int size = 0;
+			switch (type)
+			{
+			case TokenType::tok_real:
+				size = 8;
+				break;
+
+			case TokenType::tok_boolean:
+				size = 4;
+				break;
+
+			case TokenType::tok_integer:
+				size = 4;
+				break;
+			}
+			int rc = _nextLocation;
+			_nextLocation -= size;
+			return rc;
+		}
 
 		// program() is the start rule.
 		void program() 
@@ -186,24 +229,30 @@ namespace {
 		void decl() 
 		{
 			rule(6);
+			std::string name = token().Lexeme();
+			auto symbol = symbols.GetLocalSymbol(token().Lexeme());
+			if (nullptr != symbol)
+			{
+				non_fatal("duplicate definition ");
+			}
 			match(TokenType::identifier);
 			match(TokenType::colon);
-			rest();
+			rest(name);
 		}
 
-		void rest() 
+		void rest(std::string name) 
 		{
 			if (TokenType::tok_constant == token().Type()) {
 				rule(8);
 				match(TokenType::tok_constant);
-				basic_type();
+				basic_type(name, true);
 				match(TokenType::op_assignment);
 				literal_type();
 				match(TokenType::semicolon);
 			}
 			else {
 				rule(7);
-				basic_type();
+				basic_type(name, false);
 				match(TokenType::semicolon);
 			}
 		}
@@ -251,7 +300,7 @@ namespace {
 		void assignment_statement() 
 		{
 			rule(15);
-			match(TokenType::identifier);
+			idnonterminal();
 			match(TokenType::op_assignment);
 			expression();
 			match(TokenType::semicolon);
@@ -274,7 +323,7 @@ namespace {
 			rule(17);
 			match(TokenType::tok_get);
 			match(TokenType::left_paren);
-			match(TokenType::identifier);
+			idnonterminal();
 			match(TokenType::right_paren);
 			match(TokenType::semicolon);
 		}
@@ -305,11 +354,15 @@ namespace {
 		void block_statement() 
 		{
 			rule(20);
+			int saved_location = _nextLocation;
+			symbols.BeginScope();
 			declpart();
 			match(TokenType::tok_begin);
 			stats();
 			match(TokenType::tok_end);
 			match(TokenType::semicolon);
+			symbols.EndScope();
+			_nextLocation = saved_location;
 
 		}
 
@@ -399,41 +452,57 @@ namespace {
 
 		void factor() 
 		{
-			switch (token().Type()) {
+			switch (token().Type()) 
+			{
 			case TokenType::op_not:
 				rule(34);
 				match(token().Type());
 				factor();
 				break;
+
 			case TokenType::left_paren:
 				rule(35);
 				match(token().Type());
 				expression();
 				match(TokenType::right_paren);
 				break;
+			
 			case TokenType::identifier:
 				rule(36);
-				match(token().Type());
+				idnonterminal();
 				break;
+			
 			case TokenType::literal_boolean:
 			case TokenType::literal_integer:
 			case TokenType::literal_real:
 				rule(37);
 				match(token().Type());
 				break;
+			
 			default:
 				make_error(TokenType::identifier);
 				break;
 			}
 		}
 
-		void basic_type() 
+		void idnonterminal()
+		{
+			rule(40);
+			auto symbol = symbols.SearchForSymbol(token().Lexeme());
+			if(nullptr == symbol)
+				non_fatal("undefined variable ");
+			match(TokenType::identifier);
+		}
+
+		void basic_type(std::string name, bool constant)
 		{
 			switch (token().Type()) {
 			case TokenType::tok_boolean:
 			case TokenType::tok_integer:
 			case TokenType::tok_real:
 				rule(38);
+				symbols.AddSymbol(name, token().Type(), location(token().Type()),
+					constant);
 				match(token().Type());
 				break;
 

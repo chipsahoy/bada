@@ -71,15 +71,15 @@ std::string DescribeTokenType(TokenType type)
 
 
 	case TokenType::tok_integer:
-		description = "type";
+		description = "integer";
 		break;
 
 	case TokenType::tok_real:
-		description = "type";
+		description = "real";
 		break;
 
 	case TokenType::tok_boolean:
-		description = "type";
+		description = "boolean";
 		break;
 
 

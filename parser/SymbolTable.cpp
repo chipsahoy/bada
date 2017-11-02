@@ -1,6 +1,7 @@
 #include <sstream>
 
 #include "SymbolTable.h"
+#include "token.h"
 
 SymbolTable::SymbolTable()
 {
@@ -11,26 +12,14 @@ SymbolTable::~SymbolTable()
 }
 
 std::shared_ptr<Symbol> SymbolTable::AddSymbol(const std::string& name, 
-	SymbolType type)
+	TokenType type, int location, bool constant)
 {
 	if (_scopes.empty()) {
 		throw "mismatch, too many contexts closed";
 	}
 	auto scope = _scopes.back();
-	std::shared_ptr<Symbol> symbol;
-	// create a Symbol* using the derived type from SymbolType::type
-	switch (type) {
-	case SymbolType::FUNCTION:
-		symbol = std::make_shared<FunctionSymbol>(name);
-		break;
-
-	case SymbolType::VARIABLE:
-		symbol = std::make_shared<VariableSymbol>(name);
-		break;
-
-	default:
-		throw "undefined symbol type";
-	}
+	std::shared_ptr<Symbol> symbol = std::make_shared<Symbol>(name, type, 
+		location, constant);
 	scope->AddSymbol(symbol);
 	return symbol;
 }
@@ -78,7 +67,7 @@ void SymbolTable::EndScope()
 	}
 	auto scope = _scopes.back();
 	_scopes.pop_back();
-	_oldScopes.push_back(scope);
+	_oldScopes[scope->number()] = scope;
 }
 
 std::string SymbolTable::ToString() const
@@ -88,8 +77,8 @@ std::string SymbolTable::ToString() const
 	ss << "Begin symbol table.\n";
 	if (!_oldScopes.empty()) {
 		ss << "closed scopes:\n";
-		for (auto scope : _oldScopes) {
-			ss << scope->ToString();
+		for (auto scopekvp : _oldScopes) {
+			ss << scopekvp.second->ToString();
 		}
 	}
 	if (!_scopes.empty()) {

@@ -147,7 +147,10 @@
     <ClCompile Include="main.cpp" />
     <ClCompile Include="parser.cpp" />
     <ClCompile Include="scanner.cpp" />
+    <ClCompile Include="ScopeTable.cpp" />
     <ClCompile Include="Source.cpp" />
+    <ClCompile Include="Symbol.cpp" />
+    <ClCompile Include="SymbolTable.cpp" />
     <ClCompile Include="tokenizer.cpp" />
     <ClCompile Include="token.cpp" />
   </ItemGroup>
@@ -155,17 +158,10 @@
     <ClInclude Include="parser.h" />
     <ClInclude Include="scanner.h" />
     <ClInclude Include="scanner_p.h" />
+    <ClInclude Include="ScopeTable.h" />
+    <ClInclude Include="Symbol.h" />
+    <ClInclude Include="SymbolTable.h" />
     <ClInclude Include="token.h" />
-  </ItemGroup>
-  <ItemGroup>
-    <Text Include="caesar.txt" />
-    <Text Include="empty.txt" />
-    <Text Include="errors.txt" />
-    <Text Include="keywords.txt" />
-    <Text Include="legal.txt" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="binary.bin" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
