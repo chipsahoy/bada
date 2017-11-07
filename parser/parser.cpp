@@ -167,6 +167,9 @@ namespace {
 		}
 	private:
 
+		// location() allocates space for a variable and updates _nextLocation.
+		// return: the location.
+		//
 		int location(TokenType type)
 		{
 			int size = 0;
@@ -190,6 +193,7 @@ namespace {
 		}
 
 		// program() is the start rule.
+		//program 1: PROCTOK IDTOK ISTOK decls BEGINTOK stats  ENDTOK IDTOK ';'
 		void program() 
 		{
 			rule(1);
@@ -204,6 +208,7 @@ namespace {
 			match(TokenType::semicolon);
 		}
 
+		// stats  2,3  :   statmt   stats    |    <empty>
 		void stats() 
 		{
 			if (TokenType::tok_end == token().Type()) {
@@ -215,6 +220,7 @@ namespace {
 			stats();
 		}
 
+		//decls	  4,5  :   decl  decls       |    <empty>
 		void decls() 
 		{
 			if (TokenType::tok_begin == token().Type()) {
@@ -226,6 +232,7 @@ namespace {
 			decls();
 		}
 
+		// decl   6    :   IDTOK ':' rest
 		void decl() 
 		{
 			rule(6);
@@ -240,6 +247,7 @@ namespace {
 			rest(name);
 		}
 
+		// rest   7,8  :   BASTYPTOK  ';' | CONSTTOK BASTYPTOK ASTOK LITTOK ';'
 		void rest(std::string name) 
 		{
 			if (TokenType::tok_constant == token().Type()) {
@@ -257,6 +265,8 @@ namespace {
 			}
 		}
 
+		// statmt 9-14  :  assignstat  |  ifstat   |  readstat   |  writestat
+		// | blockst | loopst
 		void statement() 
 		{
 			switch (token().Type()) {
@@ -297,6 +307,7 @@ namespace {
 			}
 		}
 
+		// assignstat   15   :  idnonterm  ASTOK express ';'
 		void assignment_statement() 
 		{
 			rule(15);
@@ -306,6 +317,7 @@ namespace {
 			match(TokenType::semicolon);
 		}
 
+		// ifstat       16   :  IFTOK express THENTOK  stats ENDTOK IFTOK  ';'
 		void if_statement() 
 		{
 			rule(16);
@@ -318,6 +330,7 @@ namespace {
 			match(TokenType::semicolon);
 		}
 
+		// readstat     17   :  READTOK '(' idnonterm ')' ';'
 		void read_statement() 
 		{
 			rule(17);
@@ -328,6 +341,7 @@ namespace {
 			match(TokenType::semicolon);
 		}
 
+		// writestat    18   :  WRITETOK '('  writeexp ')' ';'
 		void write_statement() 
 		{
 			rule(18);
@@ -339,6 +353,7 @@ namespace {
 
 		}
 
+		// loopst  19   :  WHILETOK express LOOPTOK stats  ENDTOK LOOPTOK ';'
 		void while_statement() 
 		{
 			rule(19);
@@ -351,6 +366,7 @@ namespace {
 			match(TokenType::semicolon);
 		}
 
+		// blockst      20   :  declpart   BEGINTOK   stats   ENDTOK  ';'
 		void block_statement() 
 		{
 			rule(20);
@@ -366,6 +382,7 @@ namespace {
 
 		}
 
+		// declpart     21,22:  DECTOK  decl  decls		 |    <empty>
 		void declpart() 
 		{
 			if (TokenType::tok_declare == token().Type()) {
@@ -379,6 +396,7 @@ namespace {
 			}
 		}
 
+		// writeexp     23,24:  STRLITTOK  |  express
 		void write_expression() 
 		{
 			if (TokenType::literal_string == token().Type()) {
@@ -391,6 +409,7 @@ namespace {
 			}
 		}
 
+		// express      25   :  term expprime       
 		void expression() 
 		{
 			rule(25);
@@ -398,6 +417,7 @@ namespace {
 			expprime();
 		}
 
+		// expprime     26,27:  ADDOPTOK  term expprime   |  <empty>  
 		void expprime() 
 		{
 			if (TokenType::op_add == token().Type()) {
@@ -411,6 +431,7 @@ namespace {
 			}
 		}
 
+		// term         28   :  relfactor termprime
 		void term() 
 		{
 			rule(28);
@@ -418,6 +439,7 @@ namespace {
 			termprime();
 		}
 
+		// termprime    29,30:  MULOPTOK  relfactor termprime  |  <empty> 
 		void termprime() 
 		{
 			if (TokenType::op_multiply == token().Type()) {
@@ -431,6 +453,7 @@ namespace {
 			}
 		}
 
+		// relfactor    31   :  factor factorprime
 		void relfactor() 
 		{
 			rule(31);
@@ -438,6 +461,7 @@ namespace {
 			factorprime();
 		}
 
+		// factorprime  32,33:  RELOPTOK  factor          |  <empty>
 		void factorprime() 
 		{
 			if (TokenType::op_relational == token().Type()) {
@@ -450,6 +474,10 @@ namespace {
 			}
 		}
 
+		// factor       34-37:  NOTTOK   factor             
+		// | idnonterm
+		//	| LITTOK
+		//	| '('  express  ')'
 		void factor() 
 		{
 			switch (token().Type()) 
@@ -485,6 +513,7 @@ namespace {
 			}
 		}
 
+		// idnonterm     40  :  IDTOK
 		void idnonterminal()
 		{
 			rule(40);
@@ -494,6 +523,7 @@ namespace {
 			match(TokenType::identifier);
 		}
 
+		// basic_type   38   : BOOLTOK | INTTOK | REALTOK	
 		void basic_type(std::string name, bool constant)
 		{
 			switch (token().Type()) {
@@ -513,6 +543,7 @@ namespace {
 			}
 		}
 
+		// literal_type 39   : LITERALBOOL | LITERALINT | LITERALREAL
 		void literal_type() 
 		{
 			switch (token().Type()) {
