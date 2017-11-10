@@ -1,8 +1,10 @@
 #ifndef SYMBOL_H
 #define SYMBOL_H
 #include <string>
-#include "token.h"
+#include <vector>
 
+#include "token.h"
+#include "location.h"
 
 // This is the base class for all symbol types.
 // every symbol has a name, location, and type at least.
@@ -33,24 +35,48 @@ private:
 	// by design, enforced by private and const.
 	const std::string _name;
 	const TokenType _type;
-	const int _location;
-	const bool _isConstant;
+	const Location _location;
 protected:
 public:
-	Symbol(const std::string& name, const TokenType type, int location, 
-		bool constant);
+	Symbol(const std::string& name, const TokenType type, Location location);
 	// The destructor needs to be virtual for when delete is called on a 
 	// Symbol* for a derived class.
 	virtual ~Symbol(); 
 	// This base class is immutable so these methods have no preconditions.
 	std::string name() const;
 	TokenType type() const;
-	int location() const;
-	bool constant() const;
+	Location location() const;
 	// A symbol prints itself with ToString.
 	std::string ToString() const;
 
 };
 
+class VariableSymbol : public Symbol
+{
+	const bool _isConstant;
+	const bool _isOut;
+public:
+	VariableSymbol(const std::string& name, const TokenType type, 
+		Location location, bool constant, bool out);
+	bool constant() const;
+	bool out() const;
+};
+
+struct param_info
+{
+	std::string name;
+	TokenType type;
+	bool out;
+};
+
+class ProcedureSymbol : public Symbol
+{
+	std::vector<param_info> _paramTypes;
+
+public:
+	ProcedureSymbol(std::string name, Location l);
+	void AddParam(const param_info& info);
+	const std::vector<param_info>& params() const;
+};
 #endif
 

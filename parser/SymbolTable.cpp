@@ -11,17 +11,31 @@ SymbolTable::~SymbolTable()
 {
 }
 
-std::shared_ptr<Symbol> SymbolTable::AddSymbol(const std::string& name, 
-	TokenType type, int location, bool constant)
+std::shared_ptr<Symbol> SymbolTable::AddLocal(const std::string& name, 
+	TokenType type, Location location, bool constant)
 {
 	if (_scopes.empty()) {
 		throw "mismatch, too many contexts closed";
 	}
 	auto scope = _scopes.back();
-	std::shared_ptr<Symbol> symbol = std::make_shared<Symbol>(name, type, 
-		location, constant);
+	std::shared_ptr<Symbol> symbol(new VariableSymbol(name, type, 
+		location, constant, false));
 	scope->AddSymbol(symbol);
 	return symbol;
+}
+
+
+std::shared_ptr<ProcedureSymbol> SymbolTable::AddProcedure(const std::string& name,
+	Location location)
+{
+	if (_scopes.empty()) {
+		throw "mismatch, too many contexts closed";
+	}
+	auto scope = _scopes.back();
+	std::shared_ptr<ProcedureSymbol> symbol(new ProcedureSymbol(name, location));
+	scope->AddSymbol(symbol);
+	return symbol;
+
 }
 
 std::shared_ptr<Symbol> SymbolTable::GetLocalSymbol(const std::string& name)

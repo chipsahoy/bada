@@ -5,6 +5,7 @@
 
 #include "token.h"
 #include "SymbolTable.h"
+#include "codegen.h"
 
-std::string parse(std::function<Token()> GetToken, std::string& error);
+std::string parse(std::function<Token()> GetToken, Code& c, std::string& error);
 #endif

@@ -41,6 +41,11 @@ enum class TokenType {
 	tok_get,
 	tok_begin,
 	tok_end,
+
+	tok_in,
+	tok_out,
+	tok_call,
+	tok_comma,
 };
 std::string DescribeTokenType(TokenType token);
 // this is the Token class. It remembers the type and lexeme.

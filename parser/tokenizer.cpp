@@ -53,6 +53,9 @@ namespace {
 		{"get", TokenType::tok_get},
 		{"begin", TokenType::tok_begin},
 		{"end", TokenType::tok_end},
+		{"in", TokenType::tok_in},
+		{"out", TokenType::tok_out},
+		{"call", TokenType::tok_call},
 	};
 }
 // This helper function takes a parsed id and sees if it is a keyword.
@@ -146,6 +149,9 @@ Token Scanner::GetToken()
 				return Token(TokenType::left_paren, std::string(1, ch), line);
 			case ')':
 				return Token(TokenType::right_paren, std::string(1, ch), line);
+
+			case ',':
+				return Token(TokenType::tok_comma, std::string(1, ch), line);
 
 			default: {
 				// this token might be more than one char. Needs a new state.

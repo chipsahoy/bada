@@ -37,8 +37,10 @@ public:
 	// precondition: name is not a symbol in the current scope.
 	// postcondition: name is a symbol in the current scope.
 	// returns: a pointer to the derived class implied by type.
-	std::shared_ptr<Symbol> AddSymbol(const std::string& name, TokenType t,
-		int location, bool constant);
+	std::shared_ptr<Symbol> AddLocal(const std::string& name, TokenType t,
+		Location location, bool constant);
+	std::shared_ptr<ProcedureSymbol> AddProcedure(const std::string& name,
+		Location location);
 
 	// precondition: there is a current scope open.
 	// returns: a pointer to the symbol record 

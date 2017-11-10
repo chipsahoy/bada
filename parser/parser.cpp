@@ -1,6 +1,8 @@
 #include <sstream>
-#include "parser.h"
 #include <iostream>
+
+#include "parser.h"
+#include "codegen.h"
 
 // add source line numbers for better errors.
 #define match(x) _match(__LINE__, (x))
@@ -158,54 +160,101 @@ namespace {
 	// of the BADA language.
 	class BadaParser : public Parser 
 	{
-		int _nextLocation;
+		Code& code;
 	public:
-		BadaParser(std::function<Token()> gettoken) :
-			Parser(gettoken, std::bind(&BadaParser::program, this)),
-			_nextLocation(0)
+		BadaParser(std::function<Token()> gettoken, Code& c) :
+			code(c),
+			Parser(gettoken, std::bind(&BadaParser::program, this))
+			
 		{
 		}
 	private:
 
-		// location() allocates space for a variable and updates _nextLocation.
-		// return: the location.
-		//
-		int location(TokenType type)
-		{
-			int size = 0;
-			switch (type)
-			{
-			case TokenType::tok_real:
-				size = 8;
-				break;
-
-			case TokenType::tok_boolean:
-				size = 4;
-				break;
-
-			case TokenType::tok_integer:
-				size = 4;
-				break;
-			}
-			int rc = _nextLocation;
-			_nextLocation -= size;
-			return rc;
-		}
 
 		// program() is the start rule.
-		//program 1: PROCTOK IDTOK ISTOK decls BEGINTOK stats  ENDTOK IDTOK ';'
+		// program 1: procstart procend
 		void program() 
 		{
 			rule(1);
-			match(TokenType::tok_procedure);
+
+			// setup a globl scope to hold the main().
+			int saved = code.BeginScope();
+			proc_defn();
+			code.EndScope(saved);
+		}
+
+
+		// direction 54,55: 'in' | 'out'
+		bool direction()
+		{
+			bool out = false;
+			if (token().Type() == TokenType::tok_out)
+			{
+				rule(55);
+				match(TokenType::tok_out);
+				out = true;
+			}
+			else
+			{
+				rule(54);
+				match(TokenType::tok_in);
+			}
+			return out;
+		}
+
+		// param 51: direction IDTOK ':' basic_type
+		void param(ProcedureSymbol& proc)
+		{
+			rule(51);
+			param_info p;
+			p.out = direction();
+			std::string name = token().Lexeme();
+			p.name = name;
 			match(TokenType::identifier);
-			match(TokenType::tok_is);
-			decls();
-			match(TokenType::tok_begin);
-			stats();
-			match(TokenType::tok_end);
-			match(TokenType::identifier);
-			match(TokenType::semicolon);
+			match(TokenType::colon);
+			p.type = token().Type();
+			param_type(name, p.out);
+
+			// The param_info is an integral part of the Procedure symbol.
+			// it's needed to check the number, types, direction of parameters.
+			// so it gets added to the procedure symbol here.
+			//
+			proc.AddParam(p);
+
+			// Also, the parameter is a local variable once in the procedure
+			// body, so add it to the symbol table independently.
+			//
+			symbols.AddLocal(p.name, p.type, code.Parameter(p.type), false);
+		}
+
+
+		// moreparams 52, 53: ';' param moreparams | epsilon
+		void moreparams(ProcedureSymbol& proc)
+		{
+			if (token().Type() == TokenType::semicolon) {
+				rule(52);
+				match(TokenType::semicolon);
+				param(proc);
+				moreparams(proc);
+			}
+			else {
+				rule(53);
+			}
+		}
+		// paramlist 49,50: '(' param moreparams ')' | epsilon
+		void paramlist(ProcedureSymbol& proc)
+		{
+
+			if (token().Type() == TokenType::left_paren) {
+				rule(49);
+				match(TokenType::left_paren);
+				param(proc);
+				moreparams(proc);
+				match(TokenType::right_paren);
+			}
+			else {
+				rule(50);
+			}
 		}
 
 		// stats  2,3  :   statmt   stats    |    <empty>
@@ -232,19 +281,63 @@ namespace {
 			decls();
 		}
 
-		// decl   6    :   IDTOK ':' rest
-		void decl() 
+		// proc_defn 41: PROCTOK IDTOK paramlist
+		// ISTOK decls BEGINTOK stats ENDTOK IDTOK ';'
+		void proc_defn()
 		{
-			rule(6);
+			rule(41);
+			
+		
+			match(TokenType::tok_procedure);
 			std::string name = token().Lexeme();
-			auto symbol = symbols.GetLocalSymbol(token().Lexeme());
-			if (nullptr != symbol)
-			{
-				non_fatal("duplicate definition ");
+			match(TokenType::identifier);
+			auto sym = symbols.GetLocalSymbol(name);
+			if (nullptr != sym) {
+				non_fatal("duplicate procedure definition.");
+			}
+		
+			int saved = code.BeginScope();
+
+			// the procedure name belongs in the parent scope.
+			// The parameters belong in the new block.
+			auto proc = symbols.AddProcedure(name, code.Procedure(name));
+			symbols.BeginScope();
+			paramlist(*proc);
+			match(TokenType::tok_is);
+			decls();
+			match(TokenType::tok_begin);
+			stats();
+			match(TokenType::tok_end);
+			if (name != token().Lexeme()) {
+				non_fatal("Procedure end wrong name.");
 			}
 			match(TokenType::identifier);
-			match(TokenType::colon);
-			rest(name);
+			match(TokenType::semicolon);
+
+			code.EndScope(saved);
+			symbols.EndScope();
+
+		}
+
+		// decl         6,46 :   IDTOK ':' rest | procdecldefn
+		void decl() 
+		{
+			if (token().Type() == TokenType::tok_procedure) {
+				rule(46);
+				proc_defn();
+			}
+			else {
+				rule(6);
+				std::string name = token().Lexeme();
+				auto symbol = symbols.GetLocalSymbol(token().Lexeme());
+				if (nullptr != symbol)
+				{
+					non_fatal("duplicate definition ");
+				}
+				match(TokenType::identifier);
+				match(TokenType::colon);
+				rest(name);
+			}
 		}
 
 		// rest   7,8  :   BASTYPTOK  ';' | CONSTTOK BASTYPTOK ASTOK LITTOK ';'
@@ -266,7 +359,7 @@ namespace {
 		}
 
 		// statmt 9-14  :  assignstat  |  ifstat   |  readstat   |  writestat
-		// | blockst | loopst
+		// | blockst | loopst | procinvoke
 		void statement() 
 		{
 			switch (token().Type()) {
@@ -299,6 +392,11 @@ namespace {
 			case TokenType::tok_while:
 				rule(14);
 				while_statement();
+				break;
+
+			case TokenType::tok_call:
+				rule(47);
+				proc_invoke();
 				break;
 
 			default:
@@ -370,16 +468,73 @@ namespace {
 		void block_statement() 
 		{
 			rule(20);
-			int saved_location = _nextLocation;
+			// start each block at 0 offset.
 			symbols.BeginScope();
+			int saved_location = code.BeginScope();
 			declpart();
 			match(TokenType::tok_begin);
 			stats();
 			match(TokenType::tok_end);
 			match(TokenType::semicolon);
+			code.EndScope(saved_location);
 			symbols.EndScope();
-			_nextLocation = saved_location;
 
+		}
+
+		// procinvoke 48: CALLTOK PROCID invoke_params ';'
+		void proc_invoke()
+		{
+			rule(48);
+			match(TokenType::tok_call);
+			std::string name = token().Lexeme();
+			match(TokenType::identifier);
+			invoke_params(name);
+			match(TokenType::semicolon);
+		}
+
+		// invoke_params 56,57: '(' invokeparam moreinvoke ')' | epsilon
+		void invoke_params(std::string name)
+		{
+			std::vector<std::string> params;
+			if (token().Type() == TokenType::left_paren) {
+				rule(56);
+				match(TokenType::left_paren);
+				invoke_param(params);
+				more_invoke(params);
+				match(TokenType::right_paren);
+			}
+			else {
+				rule(57);
+			}
+			// do the invoke.
+		}
+
+		// invokeparam 58,59: expression | out IDTOK
+		void invoke_param(std::vector<std::string> params)
+		{
+			if (token().Type() == TokenType::tok_out) {
+				rule(59);
+				match(TokenType::tok_out);
+				idnonterminal();
+			}
+			else {
+				rule(58);
+				expression();
+			}
+		}
+
+		// moreinvoke 60,61: ',' invokeparam moreinvoke | epsilon
+		void more_invoke(std::vector<std::string> params)
+		{
+			if (token().Type() == TokenType::tok_comma) {
+				rule(60);
+				match(TokenType::tok_comma);
+				invoke_param(params);
+				more_invoke(params);
+			}
+			else {
+				rule(61);
+			}
 		}
 
 		// declpart     21,22:  DECTOK  decl  decls		 |    <empty>
@@ -522,6 +677,23 @@ namespace {
 				non_fatal("undefined variable ");
 			match(TokenType::identifier);
 		}
+		// param_type 62 :  BOOLTOK | INTTOK | REALTOK
+		void param_type(std::string name, bool out)
+		{
+			switch (token().Type()) {
+			case TokenType::tok_boolean:
+			case TokenType::tok_integer:
+			case TokenType::tok_real:
+				rule(38);
+				match(token().Type());
+				break;
+
+			default:
+				// error
+				make_error(TokenType::tok_integer);
+				break;
+			}
+		}
 
 		// basic_type   38   : BOOLTOK | INTTOK | REALTOK	
 		void basic_type(std::string name, bool constant)
@@ -531,8 +703,8 @@ namespace {
 			case TokenType::tok_integer:
 			case TokenType::tok_real:
 				rule(38);
-				symbols.AddSymbol(name, token().Type(), location(token().Type()),
-					constant);
+				symbols.AddLocal(name, token().Type(), 
+					code.LocalVariable(token().Type()), constant);
 				match(token().Type());
 				break;
 
@@ -567,9 +739,56 @@ namespace {
 // Output: returns a leftmost derivation list of rules, line by line.
 // Error: errors are returned in error and immediately end the parsing.
 //
-std::string parse(std::function<Token()> gettoken, std::string & error)
+std::string parse(std::function<Token()> gettoken, Code& c, std::string & error)
 {
-	BadaParser parser(gettoken);
+	BadaParser parser(gettoken, c);
 	std::string output = parser.parse(error);
 	return output;
 }
+
+/*
+In ada a procedures nest and a procedure can access the data and methods of an ancestor procedure. I implement this with a stack of parent frame pointers.
+
+Locations are offsets in the current scope. Location (+8) always contains the address of the parent scope frame. It is passed as the final parameter in any function call.
+
+Example: calling a nested function:
+push fp -- the value of pfp will be the current scope
+call nested (pushes return)
+
+Example: calling a peer function
+push [fp+12] -- the pfp won't change so copy the value
+call peer (pushes return)
+
+Example: calling a function at grandparent level:
+push [[fp+12]+12] -- the value of **fp will be the parent scope
+call ancestor (pushes return).
+
+To find the number of levels to dereference, FindSymbol must return the distance with the symbol.
+
+
+param 3
+param 2
+param 1
+pfp
+return address
+saved fp
+fp
+
+Entry code:
+push bp
+mov bp, sp
+
+exit code:
+mov sp, bp+4
+pop bp
+return (pop params)
+
+now have locations:
+params		bp+16...
+parent fp	bp+12
+return 		bp+8
+old bp 		bp+4
+fp		bp
+locals		bp-0...
+
+*/

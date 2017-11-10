@@ -2,10 +2,10 @@
 
 #include "Symbol.h"
 #include "token.h"
+#include "location.h"
 
-Symbol::Symbol(const std::string& name, const TokenType type, int location,
-	bool constant) :
-	_name(name), _type(type), _location(location), _isConstant(constant)
+Symbol::Symbol(const std::string& name, const TokenType type, Location location) :
+	_name(name), _type(type), _location(location)
 {
 }
 
@@ -23,25 +23,51 @@ TokenType Symbol::type() const
 	return _type;
 }
 
-int Symbol::location() const
+Location Symbol::location() const
 {
 	return _location;
 }
 
-bool Symbol::constant() const
-{
-	return _isConstant;
-}
 
 std::string Symbol::ToString() const
 {
 	std::stringstream ss;
-	ss << _location << '\t';
-	if (constant())
-		ss << "constant ";
+	ss << _location.ToString() << '\t';
 	ss << DescribeTokenType(_type) << ": " << _name;
 	return ss.str();
 }
 
+VariableSymbol::VariableSymbol(const std::string & name, const TokenType type, 
+	Location location, bool constant, bool out) :
 
+	Symbol(name, type, location),
+	_isConstant(constant),
+	_isOut(out)
+{
+}
 
+bool VariableSymbol::constant() const
+{
+	return _isConstant;
+}
+bool VariableSymbol::out() const
+{
+	return _isOut;
+}
+
+ProcedureSymbol::ProcedureSymbol(std::string name, 
+	Location location) :
+	
+	Symbol(name, TokenType::tok_procedure, location)
+{
+}
+
+void ProcedureSymbol::AddParam(const param_info & info)
+{
+	_paramTypes.push_back(info);
+}
+
+const std::vector<param_info>& ProcedureSymbol::params() const
+{
+	return _paramTypes;
+}

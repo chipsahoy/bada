@@ -173,6 +173,22 @@ std::string DescribeTokenType(TokenType type)
 		description = "END";
 		break;
 
+	case TokenType::tok_in:
+		description = "IN";
+		break;
+
+	case TokenType::tok_out:
+		description = "OUT";
+		break;
+
+	case TokenType::tok_call:
+		description = "CALL";
+		break;
+
+	case TokenType::tok_comma:
+		description = "COMMA";
+		break;
+
 	default:
 		description = "*** ADD DESCRIPTION";
 		break;

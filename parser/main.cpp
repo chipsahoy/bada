@@ -5,7 +5,7 @@
 
 #include "scanner.h"
 #include "parser.h"
-
+#include "codegen.h"
 
 // process() parse one file and write the results to an output file.
 //
@@ -23,8 +23,9 @@ static void process(std::string filename)
 	std::ofstream output(filename + ".tree");
 	output << "derivation of " << filename << std::endl;
 	auto GetToken = CreateScanner(file);
+	std::unique_ptr<Code> code(MakeCodeGen(filename + ".asm", OutputFormat::MIPS));
 	std::string error;
-	std::string tree = parse(GetToken, error);
+	std::string tree = parse(GetToken, *code, error);
 
 	if (error.size() == 0) 
 		output << tree << std::endl;
