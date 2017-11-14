@@ -45,6 +45,9 @@
     <ClCompile Include="genmips.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="genx86.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="token.h">

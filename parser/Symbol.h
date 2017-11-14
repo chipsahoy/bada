@@ -72,11 +72,13 @@ struct param_info
 class ProcedureSymbol : public Symbol
 {
 	std::vector<param_info> _paramTypes;
+	std::string _label;
 
 public:
 	ProcedureSymbol(std::string name, Location l);
 	void AddParam(const param_info& info);
 	const std::vector<param_info>& params() const;
+	std::string label() const;
 };
 #endif
 

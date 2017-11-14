@@ -176,30 +176,11 @@ namespace {
 		void program() 
 		{
 			rule(1);
-
 			// setup a globl scope to hold the main().
-			int saved = code.BeginScope();
-			proc_defn();
-			code.EndScope(saved);
-		}
-
-
-		// direction 54,55: 'in' | 'out'
-		bool direction()
-		{
-			bool out = false;
-			if (token().Type() == TokenType::tok_out)
-			{
-				rule(55);
-				match(TokenType::tok_out);
-				out = true;
-			}
-			else
-			{
-				rule(54);
-				match(TokenType::tok_in);
-			}
-			return out;
+			symbols.BeginScope();
+			auto main = proc_defn();
+			code.GenerateCode(*main);
+			symbols.EndScope();
 		}
 
 		// param 51: direction IDTOK ':' basic_type
@@ -226,6 +207,115 @@ namespace {
 			//
 			symbols.AddLocal(p.name, p.type, code.Parameter(p.type), false);
 		}
+
+		// proc_defn 41: PROCTOK IDTOK paramlist
+		// ISTOK decls BEGINTOK stats ENDTOK IDTOK ';'
+		std::shared_ptr<ProcedureSymbol> proc_defn()
+		{
+			rule(41);
+
+
+			match(TokenType::tok_procedure);
+			std::string name = token().Lexeme();
+			match(TokenType::identifier);
+			auto sym = symbols.GetLocalSymbol(name);
+			if (nullptr != sym) {
+				non_fatal("duplicate procedure definition.");
+			}
+
+
+			// the procedure name belongs in the parent scope.
+			// The parameters belong in the new block.
+			auto proc = symbols.AddProcedure(name, code.Procedure(name));
+			symbols.BeginScope();
+			paramlist(*proc);
+			match(TokenType::tok_is);
+			decls();
+			match(TokenType::tok_begin);
+			int saved = code.BeginProcedure(*proc);
+			stats();
+			match(TokenType::tok_end);
+			if (name != token().Lexeme()) {
+				non_fatal("Procedure end wrong name.");
+			}
+			match(TokenType::identifier);
+			match(TokenType::semicolon);
+
+			code.EndProcedure(*proc, saved);
+			symbols.EndScope();
+
+			return proc;
+		}
+
+		// blockst      20   :  declpart   BEGINTOK   stats   ENDTOK  ';'
+		void block_statement()
+		{
+			rule(20);
+			// start each block at 0 offset.
+			symbols.BeginScope();
+			int saved_location = code.BeginScope();
+			declpart();
+			match(TokenType::tok_begin);
+			stats();
+			match(TokenType::tok_end);
+			match(TokenType::semicolon);
+			code.EndScope(saved_location);
+			symbols.EndScope();
+
+		}
+
+		// writeexp     23,24:  STRLITTOK  |  express
+		void write_expression()
+		{
+			if (TokenType::literal_string == token().Type()) {
+				rule(23);
+				code.PutString(token().Lexeme());
+				match(TokenType::literal_string);
+			}
+			else {
+				rule(24);
+				expression();
+			}
+		}
+
+		// basic_type   38   : BOOLTOK | INTTOK | REALTOK	
+		void basic_type(std::string name, bool constant)
+		{
+			switch (token().Type()) {
+			case TokenType::tok_boolean:
+			case TokenType::tok_integer:
+			case TokenType::tok_real:
+				rule(38);
+				symbols.AddLocal(name, token().Type(),
+					code.LocalVariable(token().Type()), constant);
+				match(token().Type());
+				break;
+
+			default:
+				// error
+				make_error(TokenType::tok_integer);
+				break;
+			}
+		}
+
+		// direction 54,55: 'in' | 'out'
+		bool direction()
+		{
+			bool out = false;
+			if (token().Type() == TokenType::tok_out)
+			{
+				rule(55);
+				match(TokenType::tok_out);
+				out = true;
+			}
+			else
+			{
+				rule(54);
+				match(TokenType::tok_in);
+			}
+			return out;
+		}
+
 
 
 		// moreparams 52, 53: ';' param moreparams | epsilon
@@ -279,44 +369,6 @@ namespace {
 			rule(4);
 			decl();
 			decls();
-		}
-
-		// proc_defn 41: PROCTOK IDTOK paramlist
-		// ISTOK decls BEGINTOK stats ENDTOK IDTOK ';'
-		void proc_defn()
-		{
-			rule(41);
-			
-		
-			match(TokenType::tok_procedure);
-			std::string name = token().Lexeme();
-			match(TokenType::identifier);
-			auto sym = symbols.GetLocalSymbol(name);
-			if (nullptr != sym) {
-				non_fatal("duplicate procedure definition.");
-			}
-		
-			int saved = code.BeginScope();
-
-			// the procedure name belongs in the parent scope.
-			// The parameters belong in the new block.
-			auto proc = symbols.AddProcedure(name, code.Procedure(name));
-			symbols.BeginScope();
-			paramlist(*proc);
-			match(TokenType::tok_is);
-			decls();
-			match(TokenType::tok_begin);
-			stats();
-			match(TokenType::tok_end);
-			if (name != token().Lexeme()) {
-				non_fatal("Procedure end wrong name.");
-			}
-			match(TokenType::identifier);
-			match(TokenType::semicolon);
-
-			code.EndScope(saved);
-			symbols.EndScope();
-
 		}
 
 		// decl         6,46 :   IDTOK ':' rest | procdecldefn
@@ -464,22 +516,6 @@ namespace {
 			match(TokenType::semicolon);
 		}
 
-		// blockst      20   :  declpart   BEGINTOK   stats   ENDTOK  ';'
-		void block_statement() 
-		{
-			rule(20);
-			// start each block at 0 offset.
-			symbols.BeginScope();
-			int saved_location = code.BeginScope();
-			declpart();
-			match(TokenType::tok_begin);
-			stats();
-			match(TokenType::tok_end);
-			match(TokenType::semicolon);
-			code.EndScope(saved_location);
-			symbols.EndScope();
-
-		}
 
 		// procinvoke 48: CALLTOK PROCID invoke_params ';'
 		void proc_invoke()
@@ -551,18 +587,6 @@ namespace {
 			}
 		}
 
-		// writeexp     23,24:  STRLITTOK  |  express
-		void write_expression() 
-		{
-			if (TokenType::literal_string == token().Type()) {
-				rule(23);
-				match(TokenType::literal_string);
-			}
-			else {
-				rule(24);
-				expression();
-			}
-		}
 
 		// express      25   :  term expprime       
 		void expression() 
@@ -695,25 +719,6 @@ namespace {
 			}
 		}
 
-		// basic_type   38   : BOOLTOK | INTTOK | REALTOK	
-		void basic_type(std::string name, bool constant)
-		{
-			switch (token().Type()) {
-			case TokenType::tok_boolean:
-			case TokenType::tok_integer:
-			case TokenType::tok_real:
-				rule(38);
-				symbols.AddLocal(name, token().Type(), 
-					code.LocalVariable(token().Type()), constant);
-				match(token().Type());
-				break;
-
-			default:
-				// error
-				make_error(TokenType::tok_integer);
-				break;
-			}
-		}
 
 		// literal_type 39   : LITERALBOOL | LITERALINT | LITERALREAL
 		void literal_type() 

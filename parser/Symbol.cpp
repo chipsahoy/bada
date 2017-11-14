@@ -71,3 +71,10 @@ const std::vector<param_info>& ProcedureSymbol::params() const
 {
 	return _paramTypes;
 }
+
+std::string ProcedureSymbol::label() const
+{
+	std::stringstream ss;
+	ss << '_' << location().offset() << '_' << name();
+	return ss.str();
+}
