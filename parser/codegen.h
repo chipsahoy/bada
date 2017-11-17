@@ -6,6 +6,15 @@
 #include "location.h"
 #include "Symbol.h"
 
+
+struct ExpRecord
+{
+	ExpRecord() : type(TokenType::error), location(0, 0, TokenType::error)
+	{}
+	TokenType type;
+	Location location;
+};
+
 // Code is a class that writes the generated code. It's called at the proper
 // points inside the parser. This keeps the parser ignorant of all details
 // about what is generated.
@@ -30,9 +39,15 @@ public:
 	
 	// The next functions implement the language functionality.
 
-	// Only put of string literals is implemented so far. itoa and similar
-	// come later. Chances are this comment won't be fixed when they are!
 	virtual void PutString(std::string msg) = 0;
+	virtual void PutInteger(Location loc) = 0;
+	virtual void UnaryOp(std::string op, ExpRecord dest, ExpRecord er) = 0;
+	virtual void BinaryOp(std::string op, ExpRecord dest, ExpRecord lop,
+		ExpRecord rop) = 0;
+	virtual Location BeginWhile() = 0;
+	virtual void EndWhile(Location loc) = 0;
+	virtual Location BeginIf(ExpRecord er) = 0;
+	virtual void EndIf(Location loc) = 0;
 	
 	//  This method needs to find the proper frame pointer and make the call.
 	virtual void CallProcedure(ProcedureSymbol& symbol) = 0;
@@ -45,7 +60,8 @@ public:
 	//
 	virtual Location LocalVariable(TokenType type) = 0;
 	virtual Location Parameter(TokenType type) = 0;
-	virtual Location Procedure(std::string name) = 0;
+	virtual Location NextCodeLocation(TokenType type) = 0;
+	virtual ExpRecord Literal(TokenType type, const std::string& lex) = 0;
 
 
 };

@@ -49,7 +49,7 @@ namespace {
 		{"while", TokenType::tok_while},
 		{"loop", TokenType::tok_loop},
 		{"put", TokenType::tok_put},
-		{"put_line", TokenType::tok_put_line},
+		{"put_line", TokenType::tok_put},
 		{"get", TokenType::tok_get},
 		{"begin", TokenType::tok_begin},
 		{"end", TokenType::tok_end},

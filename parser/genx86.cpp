@@ -56,6 +56,40 @@ namespace {
 				"invoke write_string");
 		}
 
+		virtual void PutInteger(Location loc)
+		{
+		}
+
+		virtual void BinaryOp(std::string op, ExpRecord dest, 
+			ExpRecord lop, ExpRecord rop)
+		{
+			write(op);
+		}
+		virtual void UnaryOp(std::string op, ExpRecord dest, ExpRecord er)
+		{
+
+		}
+		virtual Location BeginWhile()
+		{
+			Location loc = NextCodeLocation(TokenType::tok_while);
+			return loc;
+		}
+
+		virtual void EndWhile(Location loc)
+		{
+
+		}
+		virtual Location BeginIf(ExpRecord er)
+		{
+			Location loc = NextCodeLocation(TokenType::tok_if);
+			return loc;
+		}
+
+		virtual void EndIf(Location loc)
+		{
+
+		}
+
 		virtual int BeginScope()
 		{
 			int saved = _nextLocal;
@@ -86,6 +120,28 @@ namespace {
 		{
 			write("call", symbol.label(), "call a user procedure");
 		}
+
+		virtual ExpRecord Literal(TokenType type, const std::string& lex)
+		{
+			ExpRecord er;
+			switch (type)
+			{
+			case TokenType::literal_boolean:
+				er.type = TokenType::tok_boolean;
+				break;
+
+			case TokenType::literal_integer:
+				er.type = TokenType::tok_integer;
+				break;
+
+			case TokenType::literal_real:
+				er.type = TokenType::tok_real;
+				break;
+			}
+			er.location = LocalVariable(er.type);
+			return er;
+		}
+
 
 		virtual Location LocalVariable(TokenType type)
 		{
@@ -131,9 +187,9 @@ namespace {
 			return Location(0, loc, type);
 
 		}
-		virtual Location Procedure(std::string name)
+		virtual Location NextCodeLocation(TokenType type)
 		{
-			return Location(0, _nextProcedure++, TokenType::tok_procedure);
+			return Location(0, _nextProcedure++, type);
 		}
 	};
 

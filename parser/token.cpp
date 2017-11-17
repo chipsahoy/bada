@@ -157,10 +157,6 @@ std::string DescribeTokenType(TokenType type)
 		description = "PUT";
 		break;
 
-	case TokenType::tok_put_line:
-		description = "PUTLINE";
-		break;
-
 	case TokenType::tok_get:
 		description = "GET";
 		break;

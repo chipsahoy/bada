@@ -226,7 +226,8 @@ namespace {
 
 			// the procedure name belongs in the parent scope.
 			// The parameters belong in the new block.
-			auto proc = symbols.AddProcedure(name, code.Procedure(name));
+			auto proc = symbols.AddProcedure(name, 
+				code.NextCodeLocation(TokenType::tok_procedure));
 			symbols.BeginScope();
 			paramlist(*proc);
 			match(TokenType::tok_is);
@@ -274,7 +275,10 @@ namespace {
 			}
 			else {
 				rule(24);
-				expression();
+				ExpRecord er;
+				expression(er);
+				if (er.type == TokenType::tok_integer)
+					code.PutInteger(er.location);
 			}
 		}
 
@@ -400,7 +404,8 @@ namespace {
 				match(TokenType::tok_constant);
 				basic_type(name, true);
 				match(TokenType::op_assignment);
-				literal_type();
+				ExpRecord er;
+				literal_type(er);
 				match(TokenType::semicolon);
 			}
 			else {
@@ -461,9 +466,12 @@ namespace {
 		void assignment_statement() 
 		{
 			rule(15);
-			idnonterminal();
+			ExpRecord lhs;
+			idnonterminal(lhs);
 			match(TokenType::op_assignment);
-			expression();
+			ExpRecord rhs;
+			expression(rhs);
+			code.UnaryOp(":=", lhs, rhs);
 			match(TokenType::semicolon);
 		}
 
@@ -472,12 +480,15 @@ namespace {
 		{
 			rule(16);
 			match(TokenType::tok_if);
-			expression();
+			ExpRecord er;
+			expression(er);
 			match(TokenType::tok_then);
+			Location after = code.BeginIf(er);
 			stats();
 			match(TokenType::tok_end);
 			match(TokenType::tok_if);
 			match(TokenType::semicolon);
+			code.EndIf(after);
 		}
 
 		// readstat     17   :  READTOK '(' idnonterm ')' ';'
@@ -486,7 +497,9 @@ namespace {
 			rule(17);
 			match(TokenType::tok_get);
 			match(TokenType::left_paren);
-			idnonterminal();
+			ExpRecord er;
+			idnonterminal(er);
+			code.UnaryOp("read", er, er);
 			match(TokenType::right_paren);
 			match(TokenType::semicolon);
 		}
@@ -495,9 +508,14 @@ namespace {
 		void write_statement() 
 		{
 			rule(18);
+			bool putline = false;
+			if (token().Lexeme() == "put_line")
+				putline = true;
 			match(TokenType::tok_put);
 			match(TokenType::left_paren);
 			write_expression();
+			if (putline)
+				code.PutString("\n");
 			match(TokenType::right_paren);
 			match(TokenType::semicolon);
 
@@ -508,12 +526,17 @@ namespace {
 		{
 			rule(19);
 			match(TokenType::tok_while);
-			expression();
+			Location before = code.BeginWhile();
+			ExpRecord er;
+			expression(er);
+			Location after = code.BeginIf(er);
 			match(TokenType::tok_loop);
 			stats();
 			match(TokenType::tok_end);
 			match(TokenType::tok_loop);
 			match(TokenType::semicolon);
+			code.EndWhile(before);
+			code.EndIf(after);
 		}
 
 
@@ -551,11 +574,13 @@ namespace {
 			if (token().Type() == TokenType::tok_out) {
 				rule(59);
 				match(TokenType::tok_out);
-				idnonterminal();
+				ExpRecord er;
+				idnonterminal(er);
 			}
 			else {
 				rule(58);
-				expression();
+				ExpRecord er;
+				expression(er);
 			}
 		}
 
@@ -589,21 +614,28 @@ namespace {
 
 
 		// express      25   :  term expprime       
-		void expression() 
+		void expression(ExpRecord& er) 
 		{
 			rule(25);
-			term();
-			expprime();
+			term(er);
+			expprime(er);
 		}
 
 		// expprime     26,27:  ADDOPTOK  term expprime   |  <empty>  
-		void expprime() 
+		void expprime(ExpRecord& er) 
 		{
 			if (TokenType::op_add == token().Type()) {
 				rule(26);
+				
+				ExpRecord lhs = er;
+				std::string op = token().Lexeme();
+
 				match(TokenType::op_add);
-				term();
-				expprime();
+				term(er);
+				if (lhs.type != er.type)
+					non_fatal("type mismatch");
+				code.BinaryOp(op, er, lhs, er);
+				expprime(er);
 			}
 			else {
 				rule(27);
@@ -611,21 +643,21 @@ namespace {
 		}
 
 		// term         28   :  relfactor termprime
-		void term() 
+		void term(ExpRecord& er) 
 		{
 			rule(28);
-			relfactor();
-			termprime();
+			relfactor(er);
+			termprime(er);
 		}
 
 		// termprime    29,30:  MULOPTOK  relfactor termprime  |  <empty> 
-		void termprime() 
+		void termprime(ExpRecord& er)
 		{
 			if (TokenType::op_multiply == token().Type()) {
 				rule(29);
 				match(TokenType::op_multiply);
-				relfactor();
-				termprime();
+				relfactor(er);
+				termprime(er);
 			}
 			else {
 				rule(30);
@@ -633,20 +665,23 @@ namespace {
 		}
 
 		// relfactor    31   :  factor factorprime
-		void relfactor() 
+		void relfactor(ExpRecord& er)
 		{
 			rule(31);
-			factor();
-			factorprime();
+			factor(er);
+			factorprime(er);
 		}
 
 		// factorprime  32,33:  RELOPTOK  factor          |  <empty>
-		void factorprime() 
+		void factorprime(ExpRecord& er)
 		{
 			if (TokenType::op_relational == token().Type()) {
 				rule(32);
+				std::string op = token().Lexeme();
+				ExpRecord lop = er;
 				match(TokenType::op_relational);
-				factor();
+				factor(er);
+				code.BinaryOp(op, er, lop, er);
 			}
 			else {
 				rule(33);
@@ -657,34 +692,38 @@ namespace {
 		// | idnonterm
 		//	| LITTOK
 		//	| '('  express  ')'
-		void factor() 
+		void factor(ExpRecord& er)
 		{
 			switch (token().Type()) 
 			{
 			case TokenType::op_not:
 				rule(34);
 				match(token().Type());
-				factor();
+				factor(er);
+				code.UnaryOp("not", er, er);
 				break;
 
 			case TokenType::left_paren:
 				rule(35);
 				match(token().Type());
-				expression();
+				expression(er);
 				match(TokenType::right_paren);
 				break;
 			
 			case TokenType::identifier:
 				rule(36);
-				idnonterminal();
+				idnonterminal(er);
 				break;
 			
 			case TokenType::literal_boolean:
 			case TokenType::literal_integer:
 			case TokenType::literal_real:
 				rule(37);
+				er = code.Literal(token().Type(), token().Lexeme());
+
 				match(token().Type());
 				break;
+
 			
 			default:
 				make_error(TokenType::identifier);
@@ -693,12 +732,16 @@ namespace {
 		}
 
 		// idnonterm     40  :  IDTOK
-		void idnonterminal()
+		void idnonterminal(ExpRecord& er)
 		{
 			rule(40);
 			auto symbol = symbols.SearchForSymbol(token().Lexeme());
 			if(nullptr == symbol)
 				non_fatal("undefined variable ");
+			else {
+				er.type = symbol->type();
+				er.location = symbol->location();
+			}
 			match(TokenType::identifier);
 		}
 		// param_type 62 :  BOOLTOK | INTTOK | REALTOK
@@ -721,7 +764,7 @@ namespace {
 
 
 		// literal_type 39   : LITERALBOOL | LITERALINT | LITERALREAL
-		void literal_type() 
+		void literal_type(ExpRecord& er)
 		{
 			switch (token().Type()) {
 			case TokenType::literal_boolean:
