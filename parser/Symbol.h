@@ -35,17 +35,17 @@ private:
 	// by design, enforced by private and const.
 	const std::string _name;
 	const TokenType _type;
-	const Location _location;
+	const int _offset;
 protected:
 public:
-	Symbol(const std::string& name, const TokenType type, Location location);
+	Symbol(const std::string& name, const TokenType type, int offset);
 	// The destructor needs to be virtual for when delete is called on a 
 	// Symbol* for a derived class.
 	virtual ~Symbol(); 
 	// This base class is immutable so these methods have no preconditions.
 	std::string name() const;
 	TokenType type() const;
-	Location location() const;
+	int offset() const;
 	// A symbol prints itself with ToString.
 	std::string ToString() const;
 
@@ -57,7 +57,7 @@ class VariableSymbol : public Symbol
 	const bool _isOut;
 public:
 	VariableSymbol(const std::string& name, const TokenType type, 
-		Location location, bool constant, bool out);
+		int offset, bool constant, bool out);
 	bool constant() const;
 	bool out() const;
 };
@@ -75,7 +75,7 @@ class ProcedureSymbol : public Symbol
 	std::string _label;
 
 public:
-	ProcedureSymbol(std::string name, Location l);
+	ProcedureSymbol(std::string name, int offset);
 	void AddParam(const param_info& info);
 	const std::vector<param_info>& params() const;
 	std::string label() const;

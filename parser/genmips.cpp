@@ -30,8 +30,8 @@ namespace {
 	public:
 		MipsCode(std::string filename) :
 			_filename(filename),
-			_nextLocal(0),
-			_nextParam(12),
+			_nextLocal(),
+			_nextParam(16),
 			_nextProcedure(0)
 		{
 			_code << ".text\n.globl main\n" << "# begin user procedures\n\n";
@@ -77,7 +77,7 @@ namespace {
 
 			_code << epilog1 << std::endl;
 			
-			CallProcedure(main);
+			CallProcedure(main, 0);
 			
 			_code << epilog2 << std::endl;
 
@@ -95,7 +95,7 @@ namespace {
 		{
 			int saved = _nextLocal;
 			_nextLocal = 0;
-			_nextParam = 12;
+			_nextParam = 16;
 			return saved;
 		}
 
@@ -110,7 +110,7 @@ namespace {
 			write(symbol.label() + ':');
 			// setup stack frame
 			std::string locals_size = "LOCALS_" + 
-				std::to_string(symbol.location().offset());
+				std::to_string(symbol.offset());
 
 			write("addiu", "$sp", "-8", "space for saved registers");
 			write("sw", "$ra", "8($sp)", "save return so we can make calls");
@@ -125,9 +125,9 @@ namespace {
 		virtual void EndProcedure(ProcedureSymbol& symbol, int saved)
 		{
 			std::string locals_size = "LOCALS_" +
-				std::to_string(symbol.location().offset());
-			_data << locals_size << " = " << -_nextLocal << std::endl;
-			int to_pop = _nextLocal + 8;
+				std::to_string(symbol.offset());
+			_data << locals_size << " = " << _nextLocal << std::endl;
+			int to_pop = _nextLocal - 8;
 
 			write("lw", "$ra", "8($fp)", "restore our return addr");
 			write("lw", "$fp", "4($fp)", "restore caller frame");
@@ -251,7 +251,7 @@ namespace {
 				}
 				else if (TokenType::tok_real == er.type)
 				{
-					write("li", "$v0", "7", "read double function");
+					write("li", "$v0", "6", "read float function");
 					write("syscall", "do the read");
 					store_reg("$f0", dest.location, "store result");
 				}
@@ -260,53 +260,78 @@ namespace {
 
 		}
 
-		virtual Location BeginWhile()
+		virtual int BeginWhile()
 		{
-			Location loc = NextCodeLocation(TokenType::tok_while);
-			std::string label = "while_" + std::to_string(loc.offset()) + ':';
+			int loc = NextCodeLocation();
+			std::string label = "while_" + std::to_string(loc) + ':';
 			write(label, "before the while expression");
 			return loc;
 		}
 
-		virtual void EndWhile(Location loc)
+		virtual void EndWhile(int loc)
 		{
-			std::string label = "while_" + std::to_string(loc.offset());
+			std::string label = "while_" + std::to_string(loc);
 			write("j", label, "jump to start of while");
 		}
-		virtual Location BeginIf(ExpRecord er)
+		virtual int BeginIf(ExpRecord er)
 		{
-			Location loc = NextCodeLocation(TokenType::tok_if);
+			int loc = NextCodeLocation();
 			load_reg("$t0", er.location, "load if expression");
-			std::string label = "if_" + std::to_string(loc.offset());
+			std::string label = "if_" + std::to_string(loc);
 			write("beq", "$t0", "$0", label, "jump past when false");
 			return loc;
 		}
 
-		virtual void EndIf(Location loc)
+		virtual void EndIf(int loc)
 		{
-			std::string label = "if_" + std::to_string(loc.offset()) + ':';
+			std::string label = "if_" + std::to_string(loc) + ':';
 			write(label, "after the if block");
 		}
 
 		void load_reg(std::string dest, Location loc, std::string comment)
 		{
-			write("lw", dest, std::to_string(loc.offset()) + "($fp)", 
+			write("addu", "$t4", "$fp", "$0", "prepare to walk frames");
+			for (int i = 0; i < loc.depth(); i++)
+			{
+				write("lw", "$t4", "12($t4)", "next frame");
+			}
+			write("lw", dest, std::to_string(loc.offset()) + "($t4)", 
 				comment);
 		}
 
 		void store_reg(std::string src, Location loc, std::string comment)
 		{
-			write("sw", src, std::to_string(loc.offset()) + "($fp)", 
+			write("addu", "$t4", "$fp", "$0", "prepare to walk frames");
+			for (int i = 0; i < loc.depth(); i++)
+			{
+				write("lw", "$t4", "12($t4)", "next frame");
+			}
+			write("sw", src, std::to_string(loc.offset()) + "($t4)",
 				comment);
 		}
 
-		virtual void CallProcedure(ProcedureSymbol& symbol)
+		virtual void CallProcedure(ProcedureSymbol& symbol, int depth)
 		{
+			write("addiu", "$sp", "$sp", "-4", "space for parent fp");
 
+			write("addu", "$t4", "$fp", "$0", "prepare to walk frames");
+			for (int i = 0; i < depth; i++)
+			{
+				write("lw", "$t4", "12($t4)", "next frame");
+			}
+			write("sw", "$t4", "4($sp)", "push parent frame");
 			write("jal", symbol.label(), "call user procedure");
 
-			if (symbol.params().size() > 0) {
-				
+			int param_space = 4;
+			for(auto param : symbol.params())
+			{
+				// out parameters?
+				param_space += 4;
+			}
+			if (param_space > 0)
+			{
+				write("addiu", "$sp", "$sp", 
+					std::to_string(param_space), "pop params");
 			}
 		}
 
@@ -322,8 +347,6 @@ namespace {
 			else
 			{
 				int size = 4;
-				if (TokenType::tok_real == er.type) 
-					size = 8;
 				write("addiu", "$sp", "$sp", std::to_string(-size), "make space");
 				load_reg("$t0", er.location, "load param");
 				write("sw", "$t0", std::to_string(size) + "($sp)", "push param");
@@ -354,61 +377,35 @@ namespace {
 				er.type = TokenType::tok_real;
 				break;
 			}
-			er.location = LocalVariable(er.type);
+			er.location = Location(0, LocalVariable(er.type), er.type);
 			write("li", "$t0", literal, "place a literal in register");
 			store_reg("$t0", er.location, "move literal to memory");
 			return er;
 		}
 
-		virtual Location LocalVariable(TokenType type)
+		virtual int LocalVariable(TokenType type)
 		{
-			int size = 0;
-			switch (type)
-			{
-			case TokenType::tok_real:
-				size = 8;
-				break;
-
-			case TokenType::tok_boolean:
-				size = 4;
-				break;
-
-			case TokenType::tok_integer:
-				size = 4;
-				break;
-			}
 			int loc = _nextLocal;
-			_nextLocal -= size;
-			return Location(0, loc, type);
-
+			_nextLocal -= 4;
+			return loc;
 		}
-		virtual Location Parameter(TokenType type)
+		virtual int Parameter(TokenType type)
 		{
-			int size = 0;
-			switch (type)
-			{
-			case TokenType::tok_real:
-				size = 8;
-				break;
-
-			case TokenType::tok_boolean:
-				size = 4;
-				break;
-
-			case TokenType::tok_integer:
-				size = 4;
-				break;
-			}
 			int loc = _nextParam;
-			_nextParam += size;
-			return Location(0, loc, type);
-
+			_nextParam += 4;
+			return loc;
 		}
 
-		virtual Location NextCodeLocation(TokenType type)
+		virtual int NextCodeLocation()
 		{
-			return Location(0, _nextProcedure++, type);
+			return _nextProcedure++;
 		}
+
+		virtual void OnNewLine(int line)
+		{
+			write("# source line #" + std::to_string(line));
+		}
+
 	};
 
 	char* prolog = "# MIPS assembly generated from BADA source.\n"
@@ -420,6 +417,9 @@ namespace {
 	char* epilog1 = 
 		"\n# end user procedures.\n\n"
 		"main:\n		# program entry point\n"
+		"	addiu $sp, $sp, -12		# space for stack frame\n"
+		"	addu $fp, $sp, $0		# init frame\n"
+		"	sw $0 12($fp)	# initial pfp is null\n"
 		"	li $v0, 4\n"
 		"	la $a0, enter_msg\n"
 		"	syscall		#print string\n"

@@ -68,6 +68,10 @@ namespace {
 				_make_error(line, expected);
 		}
 
+		virtual void OnNewLine(int line)
+		{
+
+		}
 		// rule() records the rule used in output. It also detects the line
 		// number changing.
 		//
@@ -76,6 +80,7 @@ namespace {
 			if (_token.Line() != _lastLine) {
 				_lastLine = _token.Line();
 				_output << std::endl << _lastLine << ": " << r;
+				OnNewLine(_lastLine);
 			}
 			else {
 				_output << ',' << r;
@@ -227,14 +232,14 @@ namespace {
 			// the procedure name belongs in the parent scope.
 			// The parameters belong in the new block.
 			auto proc = symbols.AddProcedure(name, 
-				code.NextCodeLocation(TokenType::tok_procedure));
+				code.NextCodeLocation());
 			symbols.BeginScope();
-			code.BeginScope();
+			int saved = code.BeginScope();
 			paramlist(*proc);
 			match(TokenType::tok_is);
 			decls();
 			match(TokenType::tok_begin);
-			int saved = code.BeginProcedure(*proc);
+			code.BeginProcedure(*proc);
 			stats();
 			match(TokenType::tok_end);
 			if (name != token().Lexeme()) {
@@ -484,7 +489,7 @@ namespace {
 			ExpRecord er;
 			expression(er);
 			match(TokenType::tok_then);
-			Location after = code.BeginIf(er);
+			int after = code.BeginIf(er);
 			stats();
 			match(TokenType::tok_end);
 			match(TokenType::tok_if);
@@ -527,10 +532,10 @@ namespace {
 		{
 			rule(19);
 			match(TokenType::tok_while);
-			Location before = code.BeginWhile();
+			int before = code.BeginWhile();
 			ExpRecord er;
 			expression(er);
-			Location after = code.BeginIf(er);
+			int after = code.BeginIf(er);
 			match(TokenType::tok_loop);
 			stats();
 			match(TokenType::tok_end);
@@ -548,7 +553,8 @@ namespace {
 			match(TokenType::tok_call);
 			std::string name = token().Lexeme();
 			std::shared_ptr<ProcedureSymbol> proc = nullptr;
-			auto sym = symbols.SearchForSymbol(name);
+			int depth;
+			auto sym = symbols.SearchForSymbol(name, depth);
 			if (sym->type() != TokenType::tok_procedure) {
 				non_fatal("expected a procedure");
 			}
@@ -563,7 +569,7 @@ namespace {
 			{
 				non_fatal("wrong number of parameters for procedure");
 			}
-			code.CallProcedure(*proc);
+			code.CallProcedure(*proc, depth);
 			match(TokenType::semicolon);
 		}
 
@@ -654,7 +660,9 @@ namespace {
 				term(er);
 				if (lhs.type != er.type)
 					non_fatal("type mismatch");
-				code.BinaryOp(op, er, lhs, er);
+				ExpRecord result = code.Literal(lhs.type, "0");
+				code.BinaryOp(op, result, lhs, er);
+				er = result;
 				expprime(er);
 			}
 			else {
@@ -755,12 +763,13 @@ namespace {
 		void idnonterminal(ExpRecord& er)
 		{
 			rule(40);
-			auto symbol = symbols.SearchForSymbol(token().Lexeme());
+			int depth;
+			auto symbol = symbols.SearchForSymbol(token().Lexeme(), depth);
 			if(nullptr == symbol)
 				non_fatal("undefined variable ");
 			else {
 				er.type = symbol->type();
-				er.location = symbol->location();
+				er.location = Location(depth, symbol->offset(), er.type);
 			}
 			match(TokenType::identifier);
 		}
@@ -798,6 +807,11 @@ namespace {
 				make_error(TokenType::literal_integer);
 				break;
 			}
+		}
+
+		void OnNewLine(int line)
+		{
+			code.OnNewLine(line);
 		}
 	};
 }

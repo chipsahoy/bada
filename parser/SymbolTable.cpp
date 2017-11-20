@@ -12,7 +12,7 @@ SymbolTable::~SymbolTable()
 }
 
 std::shared_ptr<Symbol> SymbolTable::AddLocal(const std::string& name, 
-	TokenType type, Location location, bool constant)
+	TokenType type, int location, bool constant)
 {
 	if (_scopes.empty()) {
 		throw "mismatch, too many contexts closed";
@@ -26,7 +26,7 @@ std::shared_ptr<Symbol> SymbolTable::AddLocal(const std::string& name,
 
 
 std::shared_ptr<ProcedureSymbol> SymbolTable::AddProcedure(const std::string& name,
-	Location location)
+	int location)
 {
 	if (_scopes.empty()) {
 		throw "mismatch, too many contexts closed";
@@ -49,11 +49,13 @@ std::shared_ptr<Symbol> SymbolTable::GetLocalSymbol(const std::string& name)
 	return symbol;
 }
 
-std::shared_ptr<Symbol> SymbolTable::SearchForSymbol(const std::string& name)
+std::shared_ptr<Symbol> SymbolTable::SearchForSymbol(const std::string& name,
+	int& depth)
 {
 	if (_scopes.empty()) {
 		throw "mismatch, too many contexts closed";
 	}
+	depth = 0;
 	// enumerate scopes from back to front to get the stack effect.
 	auto it = _scopes.rbegin();
 	while (it != _scopes.rend()) {
@@ -64,6 +66,7 @@ std::shared_ptr<Symbol> SymbolTable::SearchForSymbol(const std::string& name)
 			return symbol;
 		}
 		it++;
+		depth++;
 	}
 	return nullptr;
 }

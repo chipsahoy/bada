@@ -4,8 +4,8 @@
 #include "token.h"
 #include "location.h"
 
-Symbol::Symbol(const std::string& name, const TokenType type, Location location) :
-	_name(name), _type(type), _location(location)
+Symbol::Symbol(const std::string& name, const TokenType type, int offset) :
+	_name(name), _type(type), _offset(offset)
 {
 }
 
@@ -23,22 +23,22 @@ TokenType Symbol::type() const
 	return _type;
 }
 
-Location Symbol::location() const
+int Symbol::offset() const
 {
-	return _location;
+	return _offset;
 }
 
 
 std::string Symbol::ToString() const
 {
 	std::stringstream ss;
-	ss << _location.ToString() << '\t';
+	ss << _offset << '\t';
 	ss << DescribeTokenType(_type) << ": " << _name;
 	return ss.str();
 }
 
 VariableSymbol::VariableSymbol(const std::string & name, const TokenType type, 
-	Location location, bool constant, bool out) :
+	int location, bool constant, bool out) :
 
 	Symbol(name, type, location),
 	_isConstant(constant),
@@ -56,7 +56,7 @@ bool VariableSymbol::out() const
 }
 
 ProcedureSymbol::ProcedureSymbol(std::string name, 
-	Location location) :
+	int location) :
 	
 	Symbol(name, TokenType::tok_procedure, location)
 {
@@ -75,6 +75,6 @@ const std::vector<param_info>& ProcedureSymbol::params() const
 std::string ProcedureSymbol::label() const
 {
 	std::stringstream ss;
-	ss << name() << '_' << location().offset();
+	ss << name() << '_' << offset();
 	return ss.str();
 }

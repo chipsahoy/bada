@@ -45,7 +45,7 @@ namespace {
 			_file.open(_filename);
 			write(code_prolog);
 			write(code_epilog1);
-			CallProcedure(main);
+			CallProcedure(main, 0);
 			write(code_epilog2);
 		}
 
@@ -73,23 +73,23 @@ namespace {
 		{
 
 		}
-		virtual Location BeginWhile()
+		virtual int BeginWhile()
 		{
-			Location loc = NextCodeLocation(TokenType::tok_while);
+			int loc = NextCodeLocation();
 			return loc;
 		}
 
-		virtual void EndWhile(Location loc)
+		virtual void EndWhile(int loc)
 		{
 
 		}
-		virtual Location BeginIf(ExpRecord er)
+		virtual int BeginIf(ExpRecord er)
 		{
-			Location loc = NextCodeLocation(TokenType::tok_if);
+			int loc = NextCodeLocation();
 			return loc;
 		}
 
-		virtual void EndIf(Location loc)
+		virtual void EndIf(int loc)
 		{
 
 		}
@@ -120,7 +120,7 @@ namespace {
 
 		}
 
-		virtual void CallProcedure(ProcedureSymbol& symbol)
+		virtual void CallProcedure(ProcedureSymbol& symbol, int depth)
 		{
 			write("call", symbol.label(), "call a user procedure");
 		}
@@ -148,12 +148,12 @@ namespace {
 				er.type = TokenType::tok_real;
 				break;
 			}
-			er.location = LocalVariable(er.type);
+			er.location = Location(0, LocalVariable(er.type), type);
 			return er;
 		}
 
 
-		virtual Location LocalVariable(TokenType type)
+		virtual int LocalVariable(TokenType type)
 		{
 			int size = 0;
 			switch (type)
@@ -172,10 +172,10 @@ namespace {
 			}
 			int loc = _nextLocal;
 			_nextLocal -= size;
-			return Location(0, loc, type);
+			return loc;
 
 		}
-		virtual Location Parameter(TokenType type)
+		virtual int Parameter(TokenType type)
 		{
 			int size = 0;
 			switch (type)
@@ -194,13 +194,19 @@ namespace {
 			}
 			int loc = _nextParam;
 			_nextParam += size;
-			return Location(0, loc, type);
+			return loc;
 
 		}
-		virtual Location NextCodeLocation(TokenType type)
+		virtual int NextCodeLocation()
 		{
-			return Location(0, _nextProcedure++, type);
+			return _nextProcedure++;
 		}
+
+		virtual void OnNewLine(int line)
+		{
+
+		}
+
 	};
 
 }

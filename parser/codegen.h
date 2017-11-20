@@ -36,7 +36,8 @@ public:
 	// Blocks that aren't procedures are marked here.
 	virtual int BeginScope() = 0;
 	virtual void EndScope(int saved) = 0;
-	
+
+	virtual void OnNewLine(int line) = 0;
 	// The next functions implement the language functionality.
 
 	virtual void PutString(std::string msg) = 0;
@@ -45,13 +46,13 @@ public:
 	virtual void UnaryOp(std::string op, ExpRecord dest, ExpRecord er) = 0;
 	virtual void BinaryOp(std::string op, ExpRecord dest, ExpRecord lop,
 		ExpRecord rop) = 0;
-	virtual Location BeginWhile() = 0;
-	virtual void EndWhile(Location loc) = 0;
-	virtual Location BeginIf(ExpRecord er) = 0;
-	virtual void EndIf(Location loc) = 0;
+	virtual int BeginWhile() = 0;
+	virtual void EndWhile(int loc) = 0;
+	virtual int BeginIf(ExpRecord er) = 0;
+	virtual void EndIf(int loc) = 0;
 	
 	//  This method needs to find the proper frame pointer and make the call.
-	virtual void CallProcedure(ProcedureSymbol& symbol) = 0;
+	virtual void CallProcedure(ProcedureSymbol& symbol, int depth) = 0;
 	virtual void PassParameter(ExpRecord er, bool out) = 0;
 
 	// These functions return the next available Location to go with a new
@@ -60,9 +61,9 @@ public:
 	// procedures have a serial number prepended to insure uniqueness since
 	// the assembly name scope is flat but the ADA names are nested.
 	//
-	virtual Location LocalVariable(TokenType type) = 0;
-	virtual Location Parameter(TokenType type) = 0;
-	virtual Location NextCodeLocation(TokenType type) = 0;
+	virtual int LocalVariable(TokenType type) = 0;
+	virtual int Parameter(TokenType type) = 0;
+	virtual int NextCodeLocation() = 0;
 	virtual ExpRecord Literal(TokenType type, const std::string& lex) = 0;
 
 
