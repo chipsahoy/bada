@@ -229,6 +229,7 @@ namespace {
 			auto proc = symbols.AddProcedure(name, 
 				code.NextCodeLocation(TokenType::tok_procedure));
 			symbols.BeginScope();
+			code.BeginScope();
 			paramlist(*proc);
 			match(TokenType::tok_is);
 			decls();
@@ -244,7 +245,7 @@ namespace {
 
 			code.EndProcedure(*proc, saved);
 			symbols.EndScope();
-
+			code.EndScope(saved);
 			return proc;
 		}
 
@@ -515,7 +516,7 @@ namespace {
 			match(TokenType::left_paren);
 			write_expression();
 			if (putline)
-				code.PutString("\n");
+				code.PutChar('\n');
 			match(TokenType::right_paren);
 			match(TokenType::semicolon);
 
@@ -546,20 +547,35 @@ namespace {
 			rule(48);
 			match(TokenType::tok_call);
 			std::string name = token().Lexeme();
+			std::shared_ptr<ProcedureSymbol> proc = nullptr;
+			auto sym = symbols.SearchForSymbol(name);
+			if (sym->type() != TokenType::tok_procedure) {
+				non_fatal("expected a procedure");
+			}
+			else {
+				proc = std::static_pointer_cast<ProcedureSymbol>(sym);
+			}
+			
 			match(TokenType::identifier);
-			invoke_params(name);
+			int current_param = 0;
+			invoke_params(proc, current_param);
+			if (proc->params().size() != current_param)
+			{
+				non_fatal("wrong number of parameters for procedure");
+			}
+			code.CallProcedure(*proc);
 			match(TokenType::semicolon);
 		}
 
 		// invoke_params 56,57: '(' invokeparam moreinvoke ')' | epsilon
-		void invoke_params(std::string name)
+		void invoke_params(std::shared_ptr<ProcedureSymbol> proc, int& ix)
 		{
 			std::vector<std::string> params;
 			if (token().Type() == TokenType::left_paren) {
 				rule(56);
 				match(TokenType::left_paren);
-				invoke_param(params);
-				more_invoke(params);
+				invoke_param(proc, ix);
+				more_invoke(proc, ix);
 				match(TokenType::right_paren);
 			}
 			else {
@@ -569,29 +585,33 @@ namespace {
 		}
 
 		// invokeparam 58,59: expression | out IDTOK
-		void invoke_param(std::vector<std::string> params)
+		void invoke_param(std::shared_ptr<ProcedureSymbol> proc, int& ix)
 		{
 			if (token().Type() == TokenType::tok_out) {
 				rule(59);
 				match(TokenType::tok_out);
 				ExpRecord er;
 				idnonterminal(er);
+				code.PassParameter(er, true);
+				ix++;
 			}
 			else {
 				rule(58);
 				ExpRecord er;
 				expression(er);
+				code.PassParameter(er, false);
+				ix++;
 			}
 		}
 
 		// moreinvoke 60,61: ',' invokeparam moreinvoke | epsilon
-		void more_invoke(std::vector<std::string> params)
+		void more_invoke(std::shared_ptr<ProcedureSymbol> proc, int& ix)
 		{
 			if (token().Type() == TokenType::tok_comma) {
 				rule(60);
 				match(TokenType::tok_comma);
-				invoke_param(params);
-				more_invoke(params);
+				invoke_param(proc, ix);
+				more_invoke(proc, ix);
 			}
 			else {
 				rule(61);

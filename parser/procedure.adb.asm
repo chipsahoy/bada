@@ -5,97 +5,66 @@ exit_msg : .asciiz "\nend program\n"
 
 # user string literals:
 
-literal1:	.asciiz	"enter a positive integer: "	# a string
-literal5:	.asciiz	"FIVE!"	# a string
-literal6:	.asciiz	"
-"	# a string
-literal8:	.asciiz	"
-"	# a string
-literal10:	.asciiz	"final answer is "	# a string
+literal_2:	.asciiz	"in foo "	# a string
+LOCALS_1 = 0
+literal_3:	.asciiz	"enter a positive integer: "	# a string
+literal_4:	.asciiz	"after foo"	# a string
+LOCALS_0 = 0
 
 .text
 .globl main
 # begin user procedures
 
-_0_main:			# begin user procedure
+# begin procedure foo_1
+foo_1:
+	addiu	$sp, -8			# space for saved registers
+	sw	$ra, 8($sp)			# save return so we can make calls
+	sw	$fp, 4($sp)			# preserve caller frame
+	add	$fp, $sp, $0			# create our frame
+	addiu	$sp, LOCALS_1			# space for local vars
 	li	$v0, 4			# write string function
-	la	$a0, literal1			# load string literal
+	la	$a0, literal_2			# load string literal
+	syscall			# do the write string
+	li	$v0, 1			# write integer function
+	lw	$a0, 12($fp)			# load the integer
+	syscall			# do the write integer
+	li	$v0, 11			# write char function
+	li	$a0, 10			# ascii char
+	syscall			# do the write char
+	lw	$ra, 8($fp)			# restore our return addr
+	lw	$fp, 4($fp)			# restore caller frame
+	addiu	$sp, -8			# restore locals space
+	jr	$ra			# 
+# end procedure foo_1
+
+# begin procedure main_0
+main_0:
+	addiu	$sp, -8			# space for saved registers
+	sw	$ra, 8($sp)			# save return so we can make calls
+	sw	$fp, 4($sp)			# preserve caller frame
+	add	$fp, $sp, $0			# create our frame
+	addiu	$sp, LOCALS_0			# space for local vars
+	li	$v0, 4			# write string function
+	la	$a0, literal_3			# load string literal
 	syscall			# do the write string
 	li	$v0, 5			# read integer function
 	syscall			# do the read
-	sw	$v0, 0($sp)			# store result
-	while_2:			# before the while expression
-	li	$t0, 0			# place a literal in register
-	sw	$t0, -4($sp)			# move literal to memory
-	lw	$t0, -4($sp)			# load left op
-	lw	$t1, 0($sp)			# load right op
-	slt	$t2, $t0, $t1			# binary op
-	sw	$t2, -4($sp)			# store result
-	lw	$t0, -4($sp)			# load if expression
-	beq	$t0, $0, if_3			# jump past when false
-	li	$t0, 1			# place a literal in register
-	sw	$t0, -8($sp)			# move literal to memory
-	lw	$t0, 0($sp)			# load left op
-	lw	$t1, -8($sp)			# load right op
-	sub	$t2, $t0, $t1			# binary op
-	sw	$t2, -8($sp)			# store result
-	lw	$t0, -8($sp)			# load op
-	sw	$t0, 0($sp)			# assignment
-	li	$t0, 5			# place a literal in register
-	sw	$t0, -12($sp)			# move literal to memory
-	lw	$t0, 0($sp)			# load left op
-	lw	$t1, -12($sp)			# load right op
-	sub	$t2, $t0, $t1			# binary op
-	sltu	$t2, $0, $t2			# are they not equal?
-	xori	$t2, $t2, 1			# now shows if equal
-	sw	$t2, -12($sp)			# store result
-	lw	$t0, -12($sp)			# load if expression
-	beq	$t0, $0, if_4			# jump past when false
+	sw	$v0, 0($fp)			# store result
+	addiu	$sp, $sp, -4			# make space
+	lw	$t0, 0($fp)			# load param
+	sw	$t0, 4($sp)			# push param
+	jal	foo_1			# call user procedure
 	li	$v0, 4			# write string function
-	la	$a0, literal5			# load string literal
+	la	$a0, literal_4			# load string literal
 	syscall			# do the write string
-	li	$v0, 4			# write string function
-	la	$a0, literal6			# load string literal
-	syscall			# do the write string
-	if_4:			# after the if block
-	li	$t0, 5			# place a literal in register
-	sw	$t0, -16($sp)			# move literal to memory
-	lw	$t0, 0($sp)			# load left op
-	lw	$t1, -16($sp)			# load right op
-	sub	$t2, $t0, $t1			# binary op
-	sltu	$t2, $0, $t2			# are they not equal?
-	xori	$t2, $t2, 1			# now shows if equal
-	sw	$t2, -16($sp)			# store result
-	lw	$t0, -16($sp)			# load op
-	xori	$t1, $t0, 1			# not operator
-	sw	$t1, -16($sp)			# store result
-	lw	$t0, -16($sp)			# load if expression
-	beq	$t0, $0, if_7			# jump past when false
-	li	$v0, 1			# write integer function
-	lw	$a0, 0($sp)			# load the integer
-	syscall			# do the write integer
-	li	$v0, 4			# write string function
-	la	$a0, literal8			# load string literal
-	syscall			# do the write string
-	if_7:			# after the if block
-	j	while_2			# jump to start of while
-	if_3:			# after the if block
-	li	$t0, 0			# place a literal in register
-	sw	$t0, -20($sp)			# move literal to memory
-	lw	$t0, -20($sp)			# load if expression
-	beq	$t0, $0, if_9			# jump past when false
-	li	$t0, 0			# place a literal in register
-	sw	$t0, -24($sp)			# move literal to memory
-	lw	$t0, -24($sp)			# load op
-	sw	$t0, 0($sp)			# assignment
-	if_9:			# after the if block
-	li	$v0, 4			# write string function
-	la	$a0, literal10			# load string literal
-	syscall			# do the write string
-	li	$v0, 1			# write integer function
-	lw	$a0, 0($sp)			# load the integer
-	syscall			# do the write integer
-jr	$ra			# end procedure _0_main
+	li	$v0, 11			# write char function
+	li	$a0, 10			# ascii char
+	syscall			# do the write char
+	lw	$ra, 8($fp)			# restore our return addr
+	lw	$fp, 4($fp)			# restore caller frame
+	addiu	$sp, -8			# restore locals space
+	jr	$ra			# 
+# end procedure main_0
 
 
 # end user procedures.
@@ -107,7 +76,7 @@ main:
 	syscall		#print string
 
 
-	jal	_0_main			# call user procedure
+	jal	main_0			# call user procedure
 
 	li $v0, 4
 	la $a0, exit_msg

@@ -40,6 +40,7 @@ public:
 	// The next functions implement the language functionality.
 
 	virtual void PutString(std::string msg) = 0;
+	virtual void PutChar(char ch) = 0;
 	virtual void PutInteger(Location loc) = 0;
 	virtual void UnaryOp(std::string op, ExpRecord dest, ExpRecord er) = 0;
 	virtual void BinaryOp(std::string op, ExpRecord dest, ExpRecord lop,
@@ -51,6 +52,7 @@ public:
 	
 	//  This method needs to find the proper frame pointer and make the call.
 	virtual void CallProcedure(ProcedureSymbol& symbol) = 0;
+	virtual void PassParameter(ExpRecord er, bool out) = 0;
 
 	// These functions return the next available Location to go with a new
 	// symbol. Local variables are negative offsets from the frame pointer,

@@ -56,6 +56,10 @@ namespace {
 				"invoke write_string");
 		}
 
+		virtual void PutChar(char ch)
+		{
+		}
+
 		virtual void PutInteger(Location loc)
 		{
 		}
@@ -120,6 +124,12 @@ namespace {
 		{
 			write("call", symbol.label(), "call a user procedure");
 		}
+
+		virtual void PassParameter(ExpRecord er, bool out)
+		{
+
+		}
+
 
 		virtual ExpRecord Literal(TokenType type, const std::string& lex)
 		{
