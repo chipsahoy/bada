@@ -2,6 +2,8 @@
 .data
 enter_msg : .asciiz	"\nbegin program\n"
 exit_msg : .asciiz "\nend program\n"
+true_msg : .asciiz "true"
+false_msg : .asciiz "false"
 
 # user string literals:
 

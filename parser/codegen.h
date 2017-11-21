@@ -9,10 +9,12 @@
 
 struct ExpRecord
 {
-	ExpRecord() : type(TokenType::error), location(0, 0, TokenType::error)
+	ExpRecord() : type(TokenType::error), location(0, 0, TokenType::error),
+		constant(false)
 	{}
 	TokenType type;
 	Location location;
+	bool constant;
 };
 
 // Code is a class that writes the generated code. It's called at the proper

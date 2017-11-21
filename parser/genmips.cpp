@@ -152,6 +152,19 @@ namespace {
 				load_reg("$f12", loc, "load the float");
 				write("syscall", "do the write float");
 			}
+			else if (TokenType::tok_boolean == loc.type())
+			{
+				load_reg("$t0", loc, "load the bool");
+				int label = NextCodeLocation();
+				write("bgtz", "$t0", "true_" + std::to_string(label), "if $t0=0");
+				write("la", "$a0", "false_msg", "load 'false'");
+				write("j", "after_" + std::to_string(label), "else");
+				write("true_" + std::to_string(label) + ":");
+				write("la", "$a0", "true_msg", "load 'true'");
+				write("after_" + std::to_string(label) + ":");
+				write("li", "$v0", "4", "write string function");
+				write("syscall", "do the write string");
+			}
 		}
 
 		virtual void PutString(std::string msg)
@@ -566,6 +579,8 @@ namespace {
 		".data\n"
 		"enter_msg : .asciiz	\"\\nbegin program\\n\"\n"
 		"exit_msg : .asciiz \"\\nend program\\n\"\n"
+		"true_msg : .asciiz \"true\"\n"
+		"false_msg : .asciiz \"false\"\n"
 		"\n# user string literals:\n";
 	
 	char* epilog1 = 

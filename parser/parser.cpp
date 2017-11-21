@@ -283,6 +283,8 @@ namespace {
 				if ((er.type == TokenType::tok_integer) ||
 					(er.type == TokenType::tok_real))
 					code.PutNumber(er.location);
+				else if (er.type == TokenType::tok_boolean)
+					code.PutNumber(er.location);
 			}
 		}
 
@@ -472,9 +474,13 @@ namespace {
 			rule(15);
 			ExpRecord lhs;
 			idnonterminal(lhs);
+			if (lhs.constant)
+				non_fatal("changing a constant");
 			match(TokenType::op_assignment);
 			ExpRecord rhs;
 			expression(rhs);
+			if (lhs.type != rhs.type)
+				non_fatal("type mismatch");
 			code.UnaryOp(":=", lhs, rhs);
 			match(TokenType::semicolon);
 		}
@@ -486,6 +492,9 @@ namespace {
 			match(TokenType::tok_if);
 			ExpRecord er;
 			expression(er);
+			if(er.type != TokenType::tok_boolean)
+				non_fatal("type mismatch, expected boolean");
+
 			match(TokenType::tok_then);
 			int after = code.BeginIf(er);
 			stats();
@@ -503,6 +512,10 @@ namespace {
 			match(TokenType::left_paren);
 			ExpRecord er;
 			idnonterminal(er);
+			if(er.constant)
+				non_fatal("changing a constant");
+			if (TokenType::tok_boolean == er.type)
+				non_fatal("can't read a boolean");
 			code.UnaryOp("read", er, er);
 			match(TokenType::right_paren);
 			match(TokenType::semicolon);
@@ -533,6 +546,9 @@ namespace {
 			int before = code.BeginWhile();
 			ExpRecord er;
 			expression(er);
+			if(er.type != TokenType::tok_boolean)
+				non_fatal("type mismatch, expected boolean");
+
 			int after = code.BeginIf(er);
 			match(TokenType::tok_loop);
 			stats();
@@ -596,6 +612,10 @@ namespace {
 				match(TokenType::tok_out);
 				ExpRecord er;
 				idnonterminal(er);
+				if(er.constant)
+					non_fatal("changing a constant");
+				if(er.type != proc->params()[ix].type)
+					non_fatal("type mismatch parameter " + std::to_string(ix));
 				code.PassParameter(er, true);
 				ix++;
 			}
@@ -603,6 +623,8 @@ namespace {
 				rule(58);
 				ExpRecord er;
 				expression(er);
+				if (er.type != proc->params()[ix].type)
+					non_fatal("type mismatch parameter " + std::to_string(ix));
 				code.PassParameter(er, false);
 				ix++;
 			}
@@ -651,15 +673,15 @@ namespace {
 			if (TokenType::op_add == token().Type()) {
 				rule(26);
 				
-				ExpRecord lhs = er;
+				ExpRecord lop = er;
 				std::string op = token().Lexeme();
 
 				match(TokenType::op_add);
 				term(er);
-				if (lhs.type != er.type)
+				if (lop.type != er.type)
 					non_fatal("type mismatch");
-				ExpRecord result = code.Literal(lhs.type, "0");
-				code.BinaryOp(op, result, lhs, er);
+				ExpRecord result = code.Literal(lop.type, "0");
+				code.BinaryOp(op, result, lop, er);
 				er = result;
 				expprime(er);
 			}
@@ -682,19 +704,19 @@ namespace {
 			if (TokenType::op_multiply == token().Type()) {
 				rule(29);
 
-				ExpRecord lhs = er;
+				ExpRecord lop = er;
 				std::string op = token().Lexeme();
 
 				match(TokenType::op_multiply);
 				relfactor(er);
 
-				if (lhs.type != er.type)
+				if (lop.type != er.type)
 					non_fatal("type mismatch");
-				ExpRecord result = code.Literal(lhs.type, "0");
+				ExpRecord result = code.Literal(lop.type, "0");
 				if ("and" == op)
-					code.BinaryOp(op, result, lhs, er);
+					code.BinaryOp(op, result, lop, er);
 				else
-					code.MultOp(op, result, lhs, er);
+					code.MultOp(op, result, lop, er);
 
 				er = result;
 
@@ -722,6 +744,8 @@ namespace {
 				ExpRecord lop = er;
 				match(TokenType::op_relational);
 				factor(er);
+				if(lop.type != er.type)
+					non_fatal("type mismatch");
 				code.BinaryOp(op, er, lop, er);
 			}
 			else {
@@ -784,6 +808,7 @@ namespace {
 				auto var = std::static_pointer_cast<VariableSymbol>(symbol);
 				er.type = var->type();
 				er.location = Location(depth, var->offset(), er.type, var->out());
+				er.constant = var->constant();
 			}
 			match(TokenType::identifier);
 		}
