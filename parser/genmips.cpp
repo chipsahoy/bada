@@ -138,11 +138,20 @@ namespace {
 			write("");
 		}
 
-		virtual void PutInteger(Location loc)
+		virtual void PutNumber(Location loc)
 		{
-			write("li", "$v0", "1", "write integer function");
-			load_reg("$a0", loc, "load the integer");
-			write("syscall", "do the write integer");
+			if (TokenType::tok_integer == loc.type())
+			{
+				write("li", "$v0", "1", "write integer function");
+				load_reg("$a0", loc, "load the integer");
+				write("syscall", "do the write integer");
+			}
+			else if (TokenType::tok_real == loc.type())
+			{
+				write("li", "$v0", "2", "write float function");
+				load_reg("$f12", loc, "load the float");
+				write("syscall", "do the write float");
+			}
 		}
 
 		virtual void PutString(std::string msg)
@@ -161,6 +170,117 @@ namespace {
 			write("syscall", "do the write char");
 		}
 
+		virtual void MultOp(std::string op, ExpRecord dest,
+			ExpRecord lop, ExpRecord rop)
+		{
+			std::string instruction;
+			if (TokenType::tok_real == lop.type)
+			{
+				BinaryOpFloat(op, dest, lop, rop);
+				return;
+			}
+
+			switch (op[0])
+			{
+			case '*':
+				instruction = "mult";
+				break;
+
+			case '/':
+				instruction = "div";
+				break;
+
+			case 'm': // mod
+				instruction = "div";
+				break;
+
+			}
+			load_reg("$t0", lop.location, "load left op");
+			load_reg("$t1", rop.location, "load right op");
+
+			write(instruction, "$t0", "$t1", "mult op");
+
+			if ('m' == op[0])
+				write("mfhi", "$t2", "get result from special reg");
+			else
+				write("mflo", "$t2", "get result from special reg");
+
+			store_reg("$t2", dest.location, "store result");
+		}
+
+		void BinaryOpFloat(std::string op, ExpRecord dest,
+			ExpRecord lop, ExpRecord rop)
+		{
+			std::string instruction;
+			switch (op[0])
+			{
+			case '+':
+				instruction = "add.s";
+				break;
+
+			case '-':
+				instruction = "sub.s";
+				break;
+
+			case '*':
+				instruction = "mul.s";
+				break;
+
+			case '/':
+				instruction = "div.s";
+				break;
+			}
+
+			load_reg("$f0", lop.location, "load left op");
+			load_reg("$f1", rop.location, "load right op");
+
+			write(instruction, "$f2", "$f0", "$f1", "binary op");
+
+			store_reg("$f2", dest.location, "store result");
+		}
+
+		void CompareFloat(std::string op, ExpRecord dest,
+			ExpRecord lop, ExpRecord rop)
+		{
+			std::string instruction;
+			switch (op[0])
+			{
+			case '<':
+				instruction = "c.lt.s";
+				break;
+
+			case '>':
+			{
+				instruction = "c.lt.s";
+				ExpRecord temp = lop;
+				lop = rop;
+				rop = temp;
+			}
+				break;
+
+			case '=':
+				instruction = "c.eq.s";
+				break;
+
+			}
+			load_reg("$f0", lop.location, "load left op");
+			load_reg("$f1", rop.location, "load right op");
+
+			write(instruction, "$f0", "$f1", "compare floats");
+			int loc = NextCodeLocation();
+			std::string t = "br_t_" + std::to_string(loc);
+			write("bc1t", t, "jump on true");
+			write("add", "$t0", "$0", "$0", "false in t0");
+			std::string end = "br_end_" + std::to_string(loc);
+			write("j", end, "jump past true case");
+			write(t + ":");
+			write("li", "$t0", "1", "true in t0");
+			write(end + ":");
+
+			store_reg("$t0", dest.location, "store result");
+
+		}
+
 		virtual void BinaryOp(std::string op, ExpRecord dest,
 			ExpRecord lop, ExpRecord rop)
 		{
@@ -170,24 +290,20 @@ namespace {
 			switch (op[0])
 			{
 			case '+':
-				instruction = "addu";
-				dest.type = lop.type;
+				instruction = "add";
 				break;
 
 			case '-':
 				instruction = "sub";
-				dest.type = lop.type;
 				break;
 
 			case '<':
 				instruction = "slt";
-				dest.type = TokenType::tok_boolean;
 				break;
 			
 			case '>':
 			{
 				instruction = "slt";
-				dest.type = TokenType::tok_boolean;
 				// swap left, right so we can just test less than.
 				ExpRecord er = lop;
 				lop = rop;
@@ -197,8 +313,15 @@ namespace {
 
 			case '=':
 				instruction = "sub";
-				dest.type = TokenType::tok_boolean;
 				invert = true;
+				break;
+
+			case 'a': // and
+				instruction = "and";
+				break;
+
+			case 'o': // or
+				instruction = "or";
 				break;
 
 			default:
@@ -230,26 +353,23 @@ namespace {
 			case ':': // assignment
 				load_reg("$t0", er.location, "load op");
 				store_reg("$t0", dest.location, "assignment");
-				dest.type = er.type;
 				break;
 
 			case 'n': // not
 				load_reg("$t0", er.location, "load op");
 				write("xori", "$t1", "$t0", "1", "not operator");
 				store_reg("$t1", dest.location, "store result");
-				dest.type = TokenType::tok_boolean;
 				break;
 
 			case 'r': // read
-				dest.type = er.type;
 
-				if (TokenType::tok_integer == er.type)
+				if (TokenType::tok_integer == dest.type)
 				{
 					write("li", "$v0", "5", "read integer function");
 					write("syscall", "do the read");
 					store_reg("$v0", dest.location, "store result");
 				}
-				else if (TokenType::tok_real == er.type)
+				else if (TokenType::tok_real == dest.type)
 				{
 					write("li", "$v0", "6", "read float function");
 					write("syscall", "do the read");
@@ -295,19 +415,49 @@ namespace {
 			{
 				write("lw", "$t4", "12($t4)", "next frame");
 			}
-			write("lw", dest, std::to_string(loc.offset()) + "($t4)", 
-				comment);
+			if (loc.pointer())
+			{
+				write("la", dest, std::to_string(loc.offset()) + "($t4)",
+					comment);
+
+			}
+			else
+			{
+				if (('f' == dest[1]) && !('p' == dest[2]))
+				{
+					write("l.s", dest, std::to_string(loc.offset()) + "($t4)",
+						comment);
+				}
+				else
+				{
+					write("lw", dest, std::to_string(loc.offset()) + "($t4)",
+						comment);
+				}
+			}
 		}
 
 		void store_reg(std::string src, Location loc, std::string comment)
 		{
+			std::string mem = std::to_string(loc.offset()) + "($t4)";
+
 			write("addu", "$t4", "$fp", "$0", "prepare to walk frames");
 			for (int i = 0; i < loc.depth(); i++)
 			{
 				write("lw", "$t4", "12($t4)", "next frame");
 			}
-			write("sw", src, std::to_string(loc.offset()) + "($t4)",
-				comment);
+			if (loc.pointer())
+			{
+				write("lw", "$t4", std::to_string(loc.offset()) + "($t4)", "deref pointer");
+				mem = "0($t4)";
+			}
+			if (('f' == src[1]) && !('p' == src[2]))
+			{
+				write("s.s", src, mem, comment);
+			}
+			else
+			{
+				write("sw", src, mem, comment);
+			}
 		}
 
 		virtual void CallProcedure(ProcedureSymbol& symbol, int depth)
@@ -339,9 +489,11 @@ namespace {
 		{
 			if (out)
 			{
+				Location loc(er.location.depth(), er.location.offset(), er.type, true);
 				// store address
 				write("addiu", "$sp", "$sp", "-4", "make space");
-				load_reg("$t0", er.location, "load param");
+				// todo: out
+				load_reg("$t0", loc, "load param");
 				write("sw", "$t0", "4($sp)", "push param");
 			}
 			else
@@ -358,6 +510,8 @@ namespace {
 			std::string literal = lex;
 
 			ExpRecord er;
+			er.type = type;
+
 			switch (type)
 			{
 			case TokenType::literal_boolean:

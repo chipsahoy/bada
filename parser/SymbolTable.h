@@ -39,6 +39,8 @@ public:
 	// returns: a pointer to the derived class implied by type.
 	std::shared_ptr<Symbol> AddLocal(const std::string& name, TokenType t,
 		int offset, bool constant);
+	std::shared_ptr<Symbol> AddParam(const std::string& name, TokenType t,
+		int offset, bool out);
 	std::shared_ptr<ProcedureSymbol> AddProcedure(const std::string& name,
 		int offset);
 

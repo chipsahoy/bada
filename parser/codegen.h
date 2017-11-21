@@ -42,10 +42,13 @@ public:
 
 	virtual void PutString(std::string msg) = 0;
 	virtual void PutChar(char ch) = 0;
-	virtual void PutInteger(Location loc) = 0;
+	virtual void PutNumber(Location loc) = 0;
 	virtual void UnaryOp(std::string op, ExpRecord dest, ExpRecord er) = 0;
 	virtual void BinaryOp(std::string op, ExpRecord dest, ExpRecord lop,
 		ExpRecord rop) = 0;
+	virtual void MultOp(std::string op, ExpRecord dest,
+		ExpRecord lop, ExpRecord rop) = 0;
+
 	virtual int BeginWhile() = 0;
 	virtual void EndWhile(int loc) = 0;
 	virtual int BeginIf(ExpRecord er) = 0;

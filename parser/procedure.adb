@@ -2,29 +2,15 @@ procedure main is
 	glbl : integer;
 	i : integer;
 
-	procedure foo(in x : integer) is
-		procedure nested is
-		begin
-			put_line("in nested");
-			put_line(glbl);
-		end nested;
+	procedure foo(out x : integer) is
 	begin
-		put("in foo ");
-		put_line(x);
-		call nested;
-		put("global ");
-		put_line(glbl);
-		put("i ");
-		put_line(i);
+		put("enter a positive integer: ");
+		get(glbl);
+		x := glbl + 5;
 	end foo;
 
 begin
-	put("enter a positive integer: ");
-	get(i);
-	glbl := 2+i;
-	call foo(i);
-	put("after foo global ");
-	put_line(glbl);
-	put("i ");
+	call foo(out i);
+	put("after foo ");
 	put_line(i);
 end main;

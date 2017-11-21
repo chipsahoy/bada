@@ -24,6 +24,19 @@ std::shared_ptr<Symbol> SymbolTable::AddLocal(const std::string& name,
 	return symbol;
 }
 
+std::shared_ptr<Symbol> SymbolTable::AddParam(const std::string& name,
+	TokenType type, int location, bool out)
+{
+	if (_scopes.empty()) {
+		throw "mismatch, too many contexts closed";
+	}
+	auto scope = _scopes.back();
+	std::shared_ptr<Symbol> symbol(new VariableSymbol(name, type,
+		location, false, out));
+	scope->AddSymbol(symbol);
+	return symbol;
+}
+
 
 std::shared_ptr<ProcedureSymbol> SymbolTable::AddProcedure(const std::string& name,
 	int location)

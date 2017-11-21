@@ -210,7 +210,7 @@ namespace {
 			// Also, the parameter is a local variable once in the procedure
 			// body, so add it to the symbol table independently.
 			//
-			symbols.AddLocal(p.name, p.type, code.Parameter(p.type), false);
+			symbols.AddParam(p.name, p.type, code.Parameter(p.type), p.out);
 		}
 
 		// proc_defn 41: PROCTOK IDTOK paramlist
@@ -258,15 +258,12 @@ namespace {
 		void block_statement()
 		{
 			rule(20);
-			// start each block at 0 offset.
 			symbols.BeginScope();
-			int saved_location = code.BeginScope();
 			declpart();
 			match(TokenType::tok_begin);
 			stats();
 			match(TokenType::tok_end);
 			match(TokenType::semicolon);
-			code.EndScope(saved_location);
 			symbols.EndScope();
 
 		}
@@ -283,8 +280,9 @@ namespace {
 				rule(24);
 				ExpRecord er;
 				expression(er);
-				if (er.type == TokenType::tok_integer)
-					code.PutInteger(er.location);
+				if ((er.type == TokenType::tok_integer) ||
+					(er.type == TokenType::tok_real))
+					code.PutNumber(er.location);
 			}
 		}
 
@@ -683,8 +681,23 @@ namespace {
 		{
 			if (TokenType::op_multiply == token().Type()) {
 				rule(29);
+
+				ExpRecord lhs = er;
+				std::string op = token().Lexeme();
+
 				match(TokenType::op_multiply);
 				relfactor(er);
+
+				if (lhs.type != er.type)
+					non_fatal("type mismatch");
+				ExpRecord result = code.Literal(lhs.type, "0");
+				if ("and" == op)
+					code.BinaryOp(op, result, lhs, er);
+				else
+					code.MultOp(op, result, lhs, er);
+
+				er = result;
+
 				termprime(er);
 			}
 			else {
@@ -768,8 +781,9 @@ namespace {
 			if(nullptr == symbol)
 				non_fatal("undefined variable ");
 			else {
-				er.type = symbol->type();
-				er.location = Location(depth, symbol->offset(), er.type);
+				auto var = std::static_pointer_cast<VariableSymbol>(symbol);
+				er.type = var->type();
+				er.location = Location(depth, var->offset(), er.type, var->out());
 			}
 			match(TokenType::identifier);
 		}

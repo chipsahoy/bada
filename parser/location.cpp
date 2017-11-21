@@ -2,9 +2,10 @@
 
 #include "location.h"
 
-Location::Location(int d, int offset, TokenType type) :
+Location::Location(int d, int offset, TokenType type, bool pointer) :
 	_depth(d),
 	_offset(offset),
+	_pointer(pointer),
 	_type(type)
 {
 }
@@ -22,6 +23,11 @@ int Location::offset() const
 TokenType Location::type() const
 {
 	return _type;
+}
+
+bool Location::pointer() const
+{
+	return _pointer;
 }
 
 std::string Location::ToString() const

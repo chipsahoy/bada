@@ -60,8 +60,13 @@ namespace {
 		{
 		}
 
-		virtual void PutInteger(Location loc)
+		virtual void PutNumber(Location loc)
 		{
+		}
+		virtual void MultOp(std::string op, ExpRecord dest,
+			ExpRecord lop, ExpRecord rop)
+		{
+
 		}
 
 		virtual void BinaryOp(std::string op, ExpRecord dest, 
