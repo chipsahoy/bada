@@ -569,7 +569,10 @@ namespace {
 			std::shared_ptr<ProcedureSymbol> proc = nullptr;
 			int depth;
 			auto sym = symbols.SearchForSymbol(name, depth);
-			if (sym->type() != TokenType::tok_procedure) {
+			if (!sym) {
+				non_fatal("undefined procedure");
+			}
+			else if(sym->type() != TokenType::tok_procedure) {
 				non_fatal("expected a procedure");
 			}
 			else {
@@ -746,7 +749,9 @@ namespace {
 				factor(er);
 				if(lop.type != er.type)
 					non_fatal("type mismatch");
-				code.BinaryOp(op, er, lop, er);
+				ExpRecord result = code.Literal(TokenType::tok_boolean, "0");
+				code.BinaryOp(op, result, lop, er);
+				er = result;
 			}
 			else {
 				rule(33);
@@ -762,10 +767,16 @@ namespace {
 			switch (token().Type()) 
 			{
 			case TokenType::op_not:
+			{
 				rule(34);
 				match(token().Type());
 				factor(er);
-				code.UnaryOp("not", er, er);
+				if (TokenType::tok_boolean != er.type)
+					non_fatal("not requires boolean");
+				ExpRecord result = code.Literal(er.type, "0");
+				code.UnaryOp("not", result, er);
+				er = result;
+			}
 				break;
 
 			case TokenType::left_paren:
