@@ -79,11 +79,11 @@ namespace {
 		{
 			if (_token.Line() != _lastLine) {
 				_lastLine = _token.Line();
-				_output << std::endl << _lastLine << ": " << r;
+				//_output << std::endl << _lastLine << ": " << r;
 				OnNewLine(_lastLine);
 			}
 			else {
-				_output << ',' << r;
+				//_output << ',' << r;
 			}
 			_lastRule = r;
 		}
@@ -116,7 +116,7 @@ namespace {
 		void _non_fatal(int line, std::string message)
 		{
 			std::stringstream ss;
-			ss << "\nerror source line " << token().Line() <<
+			ss << "error source line " << token().Line() <<
 				" parser line " << line << ' ' << message << 
 				"'" << token().Lexeme() << "'\n";
 			_errorCount++;
@@ -408,10 +408,13 @@ namespace {
 			if (TokenType::tok_constant == token().Type()) {
 				rule(8);
 				match(TokenType::tok_constant);
+				TokenType varType = token().Type();
 				basic_type(name, true);
 				match(TokenType::op_assignment);
 				ExpRecord er;
 				literal_type(er);
+				if (varType != er.type)
+					non_fatal("type mismatch");
 				match(TokenType::semicolon);
 			}
 			else {
@@ -845,18 +848,26 @@ namespace {
 		// literal_type 39   : LITERALBOOL | LITERALINT | LITERALREAL
 		void literal_type(ExpRecord& er)
 		{
+			rule(39);
 			switch (token().Type()) {
 			case TokenType::literal_boolean:
-			case TokenType::literal_integer:
-			case TokenType::literal_real:
-				rule(39);
-				match(token().Type());
+				er.type = TokenType::tok_boolean;
 				break;
+
+			case TokenType::literal_integer:
+				er.type = TokenType::tok_integer;
+				break;
+
+			case TokenType::literal_real:
+				er.type = TokenType::tok_real;
+				break;
+		
 			default:
 				// error
 				make_error(TokenType::literal_integer);
 				break;
 			}
+			match(token().Type());
 		}
 
 		void OnNewLine(int line)
@@ -878,49 +889,3 @@ std::string parse(std::function<Token()> gettoken, Code& c, std::string & error)
 	return output;
 }
 
-/*
-In ada a procedures nest and a procedure can access the data and methods of an ancestor procedure. I implement this with a stack of parent frame pointers.
-
-Locations are offsets in the current scope. Location (+8) always contains the address of the parent scope frame. It is passed as the final parameter in any function call.
-
-Example: calling a nested function:
-push fp -- the value of pfp will be the current scope
-call nested (pushes return)
-
-Example: calling a peer function
-push [fp+12] -- the pfp won't change so copy the value
-call peer (pushes return)
-
-Example: calling a function at grandparent level:
-push [[fp+12]+12] -- the value of **fp will be the parent scope
-call ancestor (pushes return).
-
-To find the number of levels to dereference, FindSymbol must return the distance with the symbol.
-
-
-param 3
-param 2
-param 1
-pfp
-return address
-saved fp
-fp
-
-Entry code:
-push bp
-mov bp, sp
-
-exit code:
-mov sp, bp+4
-pop bp
-return (pop params)
-
-now have locations:
-params		bp+16...
-parent fp	bp+12
-return 		bp+8
-old bp 		bp+4
-fp		bp
-locals		bp-0...
-
-*/
