@@ -135,6 +135,12 @@ namespace {
 
 		}
 
+		virtual ExpRecord ArrayReference(ExpRecord arr, ExpRecord index)
+		{
+			ExpRecord er;
+			return er;
+		}
+
 
 		virtual ExpRecord Literal(TokenType type, const std::string& lex)
 		{
@@ -153,7 +159,7 @@ namespace {
 				er.type = TokenType::tok_real;
 				break;
 			}
-			er.location = Location(0, LocalVariable(er.type), type);
+			er = Location(0, LocalVariable(er.type), type);
 			return er;
 		}
 
@@ -180,6 +186,13 @@ namespace {
 			return loc;
 
 		}
+		virtual int LocalArray(TokenType type, int count)
+		{
+			int size = 4 + count * 4;
+			_nextLocal -= size;
+			return _nextLocal + 4;
+		}
+
 		virtual int Parameter(TokenType type)
 		{
 			int size = 0;

@@ -140,19 +140,19 @@ namespace {
 
 		virtual void PutNumber(Location loc)
 		{
-			if (TokenType::tok_integer == loc.type())
+			if (TokenType::tok_integer == loc.type)
 			{
 				write("li", "$v0", "1", "write integer function");
 				load_reg("$a0", loc, "load the integer");
 				write("syscall", "do the write integer");
 			}
-			else if (TokenType::tok_real == loc.type())
+			else if (TokenType::tok_real == loc.type)
 			{
 				write("li", "$v0", "2", "write float function");
 				load_reg("$f12", loc, "load the float");
 				write("syscall", "do the write float");
 			}
-			else if (TokenType::tok_boolean == loc.type())
+			else if (TokenType::tok_boolean == loc.type)
 			{
 				load_reg("$t0", loc, "load the bool");
 				int label = NextCodeLocation();
@@ -208,8 +208,8 @@ namespace {
 				break;
 
 			}
-			load_reg("$t0", lop.location, "load left op");
-			load_reg("$t1", rop.location, "load right op");
+			load_reg("$t0", lop, "load left op");
+			load_reg("$t1", rop, "load right op");
 
 			write(instruction, "$t0", "$t1", "mult op");
 
@@ -218,7 +218,7 @@ namespace {
 			else
 				write("mflo", "$t2", "get result from special reg");
 
-			store_reg("$t2", dest.location, "store result");
+			store_reg("$t2", dest, "store result");
 		}
 
 		void BinaryOpFloat(std::string op, ExpRecord dest,
@@ -244,12 +244,12 @@ namespace {
 				break;
 			}
 
-			load_reg("$f0", lop.location, "load left op");
-			load_reg("$f1", rop.location, "load right op");
+			load_reg("$f0", lop, "load left op");
+			load_reg("$f1", rop, "load right op");
 
 			write(instruction, "$f2", "$f0", "$f1", "binary op");
 
-			store_reg("$f2", dest.location, "store result");
+			store_reg("$f2", dest, "store result");
 		}
 
 		void CompareFloat(std::string op, ExpRecord dest,
@@ -276,8 +276,8 @@ namespace {
 				break;
 
 			}
-			load_reg("$f0", lop.location, "load left op");
-			load_reg("$f1", rop.location, "load right op");
+			load_reg("$f0", lop, "load left op");
+			load_reg("$f1", rop, "load right op");
 
 			write(instruction, "$f0", "$f1", "compare floats");
 			int loc = NextCodeLocation();
@@ -290,7 +290,7 @@ namespace {
 			write("li", "$t0", "1", "true in t0");
 			write(end + ":");
 
-			store_reg("$t0", dest.location, "store result");
+			store_reg("$t0", dest, "store result");
 
 		}
 
@@ -303,7 +303,7 @@ namespace {
 			switch (op[0])
 			{
 			case '+':
-				instruction = "add";
+				instruction = "addu";
 				break;
 
 			case '-':
@@ -342,8 +342,8 @@ namespace {
 				break;
 
 			}
-			load_reg("$t0", lop.location, "load left op");
-			load_reg("$t1", rop.location, "load right op");
+			load_reg("$t0", lop, "load left op");
+			load_reg("$t1", rop, "load right op");
 
 			write(instruction, "$t2", "$t0", "$t1", "binary op");
 			
@@ -353,7 +353,7 @@ namespace {
 				write("xori", "$t2", "$t2", "1", "now shows if equal");
 			}
 			
-			store_reg("$t2", dest.location, "store result");
+			store_reg("$t2", dest, "store result");
 		}
 
 		virtual void UnaryOp(std::string op, ExpRecord dest, ExpRecord er)
@@ -364,14 +364,14 @@ namespace {
 			switch (op[0])
 			{
 			case ':': // assignment
-				load_reg("$t0", er.location, "load op");
-				store_reg("$t0", dest.location, "assignment");
+				load_reg("$t0", er, "load op");
+				store_reg("$t0", dest, "assignment");
 				break;
 
 			case 'n': // not
-				load_reg("$t0", er.location, "load op");
+				load_reg("$t0", er, "load op");
 				write("xori", "$t1", "$t0", "1", "not operator");
-				store_reg("$t1", dest.location, "store result");
+				store_reg("$t1", dest, "store result");
 				break;
 
 			case 'r': // read
@@ -380,13 +380,13 @@ namespace {
 				{
 					write("li", "$v0", "5", "read integer function");
 					write("syscall", "do the read");
-					store_reg("$v0", dest.location, "store result");
+					store_reg("$v0", dest, "store result");
 				}
 				else if (TokenType::tok_real == dest.type)
 				{
 					write("li", "$v0", "6", "read float function");
 					write("syscall", "do the read");
-					store_reg("$f0", dest.location, "store result");
+					store_reg("$f0", dest, "store result");
 				}
 				break;
 			}
@@ -409,7 +409,7 @@ namespace {
 		virtual int BeginIf(ExpRecord er)
 		{
 			int loc = NextCodeLocation();
-			load_reg("$t0", er.location, "load if expression");
+			load_reg("$t0", er, "load if expression");
 			std::string label = "if_" + std::to_string(loc);
 			write("beq", "$t0", "$0", label, "jump past when false");
 			return loc;
@@ -421,46 +421,92 @@ namespace {
 			write(label, "after the if block");
 		}
 
+		void index_array(std::string dest, Location loc, Location index,
+			std::string comment)
+		{
+			load_reg("$t5", index, "load index");
+			write("sll", "$t5", "$t5", "2", "index to size");
+			write("addu", "$t5", "$t5", std::to_string(loc.offset), "final offset");
+
+			std::string fp = "$fp";
+			if (loc.depth > 0)
+			{
+				fp = "$t4";
+				write("addu", "$t4", "$fp", "$0", "prepare to walk frames");
+				for (int i = 0; i < loc.depth; i++)
+				{
+					write("lw", "$t4", "12($t4)", "next frame");
+				}
+			}
+			write("addu", dest, fp, "$t5", comment);
+		}
+		void load_reg_address(std::string dest, Location loc, std::string comment)
+		{
+			std::string fp = "$fp";
+
+			if (loc.depth > 0)
+			{
+				fp = "$t4";
+				write("addu", "$t4", "$fp", "$0", "prepare to walk frames");
+				for (int i = 0; i < loc.depth; i++)
+				{
+					write("lw", "$t4", "12($t4)", "next frame");
+				}
+			}
+			write("la", dest, std::to_string(loc.offset) + '(' + fp + ')',
+				comment);
+		}
+
 		void load_reg(std::string dest, Location loc, std::string comment)
 		{
-			write("addu", "$t4", "$fp", "$0", "prepare to walk frames");
-			for (int i = 0; i < loc.depth(); i++)
-			{
-				write("lw", "$t4", "12($t4)", "next frame");
-			}
-			if (loc.pointer())
-			{
-				write("la", dest, std::to_string(loc.offset()) + "($t4)",
-					comment);
+			std::string fp = "$fp";
+			int offset = loc.offset;
 
+			if (loc.depth > 0)
+			{
+				fp = "$t4";
+				write("addu", "$t4", "$fp", "$0", "prepare to walk frames");
+				for (int i = 0; i < loc.depth; i++)
+				{
+					write("lw", "$t4", "12($t4)", "next frame");
+				}
+			}
+			if (loc.pointer)
+			{
+				// put the address in $t4 and use $t4[0] instead of fp[offset]
+				write("lw", "$t4", std::to_string(loc.offset) + '(' + fp + ')',
+					comment);
+				fp = "$t4";
+				offset = 0;
+			}
+			if (('f' == dest[1]) && !('p' == dest[2]))
+			{
+				write("l.s", dest, std::to_string(offset) + '(' + fp + ')',
+					comment);
 			}
 			else
 			{
-				if (('f' == dest[1]) && !('p' == dest[2]))
-				{
-					write("l.s", dest, std::to_string(loc.offset()) + "($t4)",
-						comment);
-				}
-				else
-				{
-					write("lw", dest, std::to_string(loc.offset()) + "($t4)",
-						comment);
-				}
+				write("lw", dest, std::to_string(offset) + '(' + fp + ')',
+					comment);
 			}
 		}
 
 		void store_reg(std::string src, Location loc, std::string comment)
 		{
-			std::string mem = std::to_string(loc.offset()) + "($t4)";
-
-			write("addu", "$t4", "$fp", "$0", "prepare to walk frames");
-			for (int i = 0; i < loc.depth(); i++)
+			std::string fp = "$fp";
+			if (loc.depth > 0)
 			{
-				write("lw", "$t4", "12($t4)", "next frame");
+				fp = "$t4";
+				write("addu", "$t4", "$fp", "$0", "prepare to walk frames");
+				for (int i = 0; i < loc.depth; i++)
+				{
+					write("lw", "$t4", "12($t4)", "next frame");
+				}
 			}
-			if (loc.pointer())
+			std::string mem = std::to_string(loc.offset) + '(' + fp + ')';
+			if (loc.pointer)
 			{
-				write("lw", "$t4", std::to_string(loc.offset()) + "($t4)", "deref pointer");
+				write("lw", "$t4", mem, "deref pointer");
 				mem = "0($t4)";
 			}
 			if (('f' == src[1]) && !('p' == src[2]))
@@ -476,13 +522,17 @@ namespace {
 		virtual void CallProcedure(ProcedureSymbol& symbol, int depth)
 		{
 			write("addiu", "$sp", "$sp", "-4", "space for parent fp");
-
-			write("addu", "$t4", "$fp", "$0", "prepare to walk frames");
-			for (int i = 0; i < depth; i++)
+			std::string fp = "$fp";
+			if (depth > 0)
 			{
-				write("lw", "$t4", "12($t4)", "next frame");
+				write("addu", "$t4", "$fp", "$0", "prepare to walk frames");
+				for (int i = 0; i < depth; i++)
+				{
+					write("lw", "$t4", "12($t4)", "next frame");
+				}
+				fp = "$t4";
 			}
-			write("sw", "$t4", "4($sp)", "push parent frame");
+			write("sw", fp, "4($sp)", "push parent frame");
 			write("jal", symbol.label(), "call user procedure");
 
 			int param_space = 4;
@@ -502,20 +552,32 @@ namespace {
 		{
 			if (out)
 			{
-				Location loc(er.location.depth(), er.location.offset(), er.type, true);
+				Location loc(er.depth, er.offset, er.type, true);
 				// store address
 				write("addiu", "$sp", "$sp", "-4", "make space");
 				// todo: out
-				load_reg("$t0", loc, "load param");
+				load_reg_address("$t0", loc, "load param");
 				write("sw", "$t0", "4($sp)", "push param");
 			}
 			else
 			{
 				int size = 4;
 				write("addiu", "$sp", "$sp", std::to_string(-size), "make space");
-				load_reg("$t0", er.location, "load param");
+				load_reg("$t0", er, "load param");
 				write("sw", "$t0", std::to_string(size) + "($sp)", "push param");
 			}
+		}
+
+		// ArrayReference adds the location in arr to the offset in index
+		// to create a new location at runtime.
+		//
+		virtual ExpRecord ArrayReference(ExpRecord arr, ExpRecord index)
+		{
+			ExpRecord er = Location(0, LocalVariable(arr.type), arr.type);
+			index_array("$t2", arr, index, "array ref");
+			store_reg("$t2", er, "save address");
+			er.pointer = true;
+			return er;
 		}
 
 		virtual ExpRecord Literal(TokenType type, const std::string& lex)
@@ -544,9 +606,9 @@ namespace {
 				er.type = TokenType::tok_real;
 				break;
 			}
-			er.location = Location(0, LocalVariable(er.type), er.type);
+			er = Location(0, LocalVariable(er.type), er.type);
 			write("li", "$t0", literal, "place a literal in register");
-			store_reg("$t0", er.location, "move literal to memory");
+			store_reg("$t0", er, "move literal to memory");
 			return er;
 		}
 
@@ -555,6 +617,12 @@ namespace {
 			int loc = _nextLocal;
 			_nextLocal -= 4;
 			return loc;
+		}
+		virtual int LocalArray(TokenType type, int count)
+		{
+			int size = 4 + count * 4;
+			_nextLocal -= size;
+			return _nextLocal + 4;
 		}
 		virtual int Parameter(TokenType type)
 		{

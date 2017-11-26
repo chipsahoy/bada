@@ -13,11 +13,13 @@ class ScopeTable
 private:
 	std::map<std::string, std::shared_ptr<Symbol> > _symbols;
 	const int _scopeNumber;
+	bool _hasFrame;
 public:
-	ScopeTable(int scopeNumber);
+	ScopeTable(int scopeNumber, bool hasFrame);
 	~ScopeTable();
 
 	int number() const;
+	bool HasFrame() const;
 	// precondition: symbol.name() is not a key in _symbols.
 	// precondition: symbol is not null.
 	// postcondition: symbol is added to _symbols.

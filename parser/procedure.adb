@@ -1,16 +1,18 @@
 procedure main is
-	glbl : integer;
-	i : integer;
-
-	procedure foo(out x : integer) is
-	begin
-		put("enter a positive integer: ");
-		get(glbl);
-		x := glbl + 5;
-	end foo;
+	x : array(10) of integer;
+	ix : integer;
 
 begin
-	call foo(out i);
-	put("after foo ");
-	put_line(i);
+	ix := 2;
+	x(0) := 0;
+	x(1) := 1;
+	while(ix < 10) 
+	loop
+		x(ix) := x(ix - 1) + x(ix - 2);
+	end loop;
+	ix := 0;
+	while(ix < 10)
+	loop
+		put_line(x(ix));
+	end loop;
 end main;

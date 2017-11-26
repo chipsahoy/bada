@@ -4,8 +4,6 @@ procedure main is
 	x : integer;
 	y : integer;
 	z : integer;
-	t: constant integer := true;
-	f: constant integer := false;
 
 	procedure assert(in exp : boolean) is
 	begin

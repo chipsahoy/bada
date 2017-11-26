@@ -53,13 +53,15 @@ public:
 
 class VariableSymbol : public Symbol
 {
-	const bool _isConstant;
-	const bool _isOut;
 public:
 	VariableSymbol(const std::string& name, const TokenType type, 
 		int offset, bool constant, bool out);
-	bool constant() const;
-	bool out() const;
+	VariableSymbol(const std::string& name, const TokenType type,
+		int offset, int count);
+	const bool constant;
+	const bool out;
+	const bool array;
+	const int count;
 };
 
 struct param_info

@@ -37,6 +37,8 @@ public:
 	// precondition: name is not a symbol in the current scope.
 	// postcondition: name is a symbol in the current scope.
 	// returns: a pointer to the derived class implied by type.
+	std::shared_ptr<Symbol> AddLocalArray(const std::string& name, TokenType t,
+		int offset, int count);
 	std::shared_ptr<Symbol> AddLocal(const std::string& name, TokenType t,
 		int offset, bool constant);
 	std::shared_ptr<Symbol> AddParam(const std::string& name, TokenType t,
@@ -58,7 +60,7 @@ public:
 
 	// precondition: none
 	// postcondition: a new scope is open and becomes the current scope.
-	void BeginScope();
+	void BeginScope(bool hasFrame = true);
 
 	// precondition: there is a current scope open.
 	// postcondition: the current scope is moved from the stack to _oldScopes.

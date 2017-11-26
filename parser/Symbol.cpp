@@ -38,22 +38,27 @@ std::string Symbol::ToString() const
 }
 
 VariableSymbol::VariableSymbol(const std::string & name, const TokenType type, 
-	int location, bool constant, bool out) :
+	int location, bool c, bool o) :
 
 	Symbol(name, type, location),
-	_isConstant(constant),
-	_isOut(out)
+	constant(c),
+	array(false),
+	count(0),
+	out(o)
 {
 }
 
-bool VariableSymbol::constant() const
+VariableSymbol::VariableSymbol(const std::string & name, const TokenType type, 
+	int location, int c) :
+
+	Symbol(name, type, location),
+	out(false),
+	constant(false),
+	array(true),
+	count(c)
 {
-	return _isConstant;
 }
-bool VariableSymbol::out() const
-{
-	return _isOut;
-}
+
 
 ProcedureSymbol::ProcedureSymbol(std::string name, 
 	int location) :

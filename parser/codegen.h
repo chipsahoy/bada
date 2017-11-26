@@ -6,16 +6,17 @@
 #include "location.h"
 #include "Symbol.h"
 
+typedef Location ExpRecord;
 
-struct ExpRecord
-{
-	ExpRecord() : type(TokenType::error), location(0, 0, TokenType::error),
-		constant(false)
-	{}
-	TokenType type;
-	Location location;
-	bool constant;
-};
+//struct ExpRecord
+//{
+//	ExpRecord() : type(TokenType::error), location(0, 0, TokenType::error),
+//		constant(false)
+//	{}
+//	TokenType type;
+//	Location location;
+//	bool constant;
+//};
 
 // Code is a class that writes the generated code. It's called at the proper
 // points inside the parser. This keeps the parser ignorant of all details
@@ -67,10 +68,11 @@ public:
 	// the assembly name scope is flat but the ADA names are nested.
 	//
 	virtual int LocalVariable(TokenType type) = 0;
+	virtual int LocalArray(TokenType type, int size) = 0;
 	virtual int Parameter(TokenType type) = 0;
 	virtual int NextCodeLocation() = 0;
 	virtual ExpRecord Literal(TokenType type, const std::string& lex) = 0;
-
+	virtual ExpRecord ArrayReference(ExpRecord arr, ExpRecord index) = 0;
 
 };
 

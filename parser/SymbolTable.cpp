@@ -11,7 +11,20 @@ SymbolTable::~SymbolTable()
 {
 }
 
-std::shared_ptr<Symbol> SymbolTable::AddLocal(const std::string& name, 
+std::shared_ptr<Symbol> SymbolTable::AddLocalArray(const std::string & name, 
+	TokenType type, int location, int count)
+{
+	if (_scopes.empty()) {
+		throw "mismatch, too many contexts closed";
+	}
+	auto scope = _scopes.back();
+	std::shared_ptr<Symbol> symbol(new VariableSymbol(name, type,
+		location, false, false));
+	scope->AddSymbol(symbol);
+	return symbol;
+}
+
+std::shared_ptr<Symbol> SymbolTable::AddLocal(const std::string& name,
 	TokenType type, int location, bool constant)
 {
 	if (_scopes.empty()) {
@@ -79,14 +92,15 @@ std::shared_ptr<Symbol> SymbolTable::SearchForSymbol(const std::string& name,
 			return symbol;
 		}
 		it++;
-		depth++;
+		if (scope->HasFrame())
+			depth++;
 	}
 	return nullptr;
 }
 
-void SymbolTable::BeginScope()
+void SymbolTable::BeginScope(bool hasFrame)
 {
-	auto scope = std::make_shared<ScopeTable>(_nextScopeNumber++);
+	auto scope = std::make_shared<ScopeTable>(_nextScopeNumber++, hasFrame);
 	_scopes.push_back(scope);
 }
 

@@ -133,6 +133,14 @@ std::string DescribeTokenType(TokenType type)
 		description = "CONST";
 		break;
 
+	case TokenType::tok_array:
+		description = "ARRAY";
+		break;
+
+	case TokenType::tok_of:
+		description = "OF";
+		break;
+
 	case TokenType::op_not:
 		description = "NOT";
 		break;

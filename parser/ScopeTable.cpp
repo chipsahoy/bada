@@ -2,7 +2,9 @@
 #include <sstream>
 
 
-ScopeTable::ScopeTable(int scopeNumber) : _scopeNumber(scopeNumber)
+ScopeTable::ScopeTable(int scopeNumber, bool hasFrame) : 
+	_scopeNumber(scopeNumber),
+	_hasFrame(hasFrame)
 {
 }
 
@@ -14,6 +16,11 @@ ScopeTable::~ScopeTable()
 int ScopeTable::number() const
 {
 	return _scopeNumber;
+}
+
+bool ScopeTable::HasFrame() const
+{
+	return _hasFrame;
 }
 
 void ScopeTable::AddSymbol(std::shared_ptr<Symbol> symbol)

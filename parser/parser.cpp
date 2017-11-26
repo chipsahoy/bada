@@ -258,7 +258,7 @@ namespace {
 		void block_statement()
 		{
 			rule(20);
-			symbols.BeginScope();
+			symbols.BeginScope(false);
 			declpart();
 			match(TokenType::tok_begin);
 			stats();
@@ -282,22 +282,27 @@ namespace {
 				expression(er);
 				if ((er.type == TokenType::tok_integer) ||
 					(er.type == TokenType::tok_real))
-					code.PutNumber(er.location);
+					code.PutNumber(er);
 				else if (er.type == TokenType::tok_boolean)
-					code.PutNumber(er.location);
+					code.PutNumber(er);
 			}
 		}
 
 		// basic_type   38   : BOOLTOK | INTTOK | REALTOK	
-		void basic_type(std::string name, bool constant)
+		void basic_type(std::string name, bool constant, 
+			bool is_array = false, int array_size = 0)
 		{
 			switch (token().Type()) {
 			case TokenType::tok_boolean:
 			case TokenType::tok_integer:
 			case TokenType::tok_real:
 				rule(38);
-				symbols.AddLocal(name, token().Type(),
-					code.LocalVariable(token().Type()), constant);
+				if(is_array)
+					symbols.AddLocalArray(name, token().Type(),
+						code.LocalArray(token().Type(), array_size), array_size);
+				else
+					symbols.AddLocal(name, token().Type(),
+						code.LocalVariable(token().Type()), constant);
 				match(token().Type());
 				break;
 
@@ -403,6 +408,7 @@ namespace {
 		}
 
 		// rest   7,8  :   BASTYPTOK  ';' | CONSTTOK BASTYPTOK ASTOK LITTOK ';'
+		// | ARRAYTOK '(' LITINT ')' OFTOK BASTYPTOK;
 		void rest(std::string name) 
 		{
 			if (TokenType::tok_constant == token().Type()) {
@@ -415,6 +421,25 @@ namespace {
 				literal_type(er);
 				if (varType != er.type)
 					non_fatal("type mismatch");
+				match(TokenType::semicolon);
+			}
+			else if (TokenType::tok_array == token().Type()) {
+				// rule
+				match(TokenType::tok_array);
+				match(TokenType::left_paren);
+				int size = 1;
+				if (token().Type() != TokenType::literal_integer)
+					non_fatal("not a valid array size.");
+				else
+					size = std::stoi(token().Lexeme());
+				if (size < 1) {
+					non_fatal("not a valid array size.");
+					size = 1;
+				}
+				match(TokenType::literal_integer);
+				match(TokenType::right_paren);
+				match(TokenType::tok_of);
+				basic_type(name, false, true, size);
 				match(TokenType::semicolon);
 			}
 			else {
@@ -810,7 +835,7 @@ namespace {
 			}
 		}
 
-		// idnonterm     40  :  IDTOK
+		// idnonterm     40  :  IDTOK || IDTOK(exp)
 		void idnonterminal(ExpRecord& er)
 		{
 			rule(40);
@@ -821,10 +846,20 @@ namespace {
 			else {
 				auto var = std::static_pointer_cast<VariableSymbol>(symbol);
 				er.type = var->type();
-				er.location = Location(depth, var->offset(), er.type, var->out());
-				er.constant = var->constant();
+				er = Location(depth, var->offset(), er.type, var->out);
+				er.constant = var->constant;
 			}
 			match(TokenType::identifier);
+			if (token().Type() == TokenType::left_paren) {
+				// rule
+				match(TokenType::left_paren);
+				ExpRecord index;
+				expression(index);
+				// todo: bounds check index
+				match(TokenType::right_paren);
+				er = code.ArrayReference(er, index);
+
+			}
 		}
 		// param_type 62 :  BOOLTOK | INTTOK | REALTOK
 		void param_type(std::string name, bool out)

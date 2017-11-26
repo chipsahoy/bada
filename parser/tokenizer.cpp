@@ -56,6 +56,8 @@ namespace {
 		{"in", TokenType::tok_in},
 		{"out", TokenType::tok_out},
 		{"call", TokenType::tok_call},
+		{"array", TokenType::tok_array},
+		{"of", TokenType::tok_of},
 	};
 }
 // This helper function takes a parsed id and sees if it is a keyword.
