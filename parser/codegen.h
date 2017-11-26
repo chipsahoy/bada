@@ -76,16 +76,9 @@ public:
 
 };
 
-// Two different kinds of code are generated, for fun.
-
-enum class OutputFormat
-{
-	MIPS,
-	X86,
-};
 
 // This factory function hides the details of the implementation class
 //
-Code* MakeCodeGen(std::string name, OutputFormat type);
+Code* MakeCodeGen(std::string name);
 
 #endif

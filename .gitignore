@@ -261,3 +261,4 @@ __pycache__/
 *.pyc
 /.~lock.variables.doc#
 *.tree
+/parser/assemble.bat

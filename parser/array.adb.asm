@@ -1,145 +1,128 @@
-# MIPS assembly generated from BADA source.
+
+.386
+.model flat, C
+
+PUBLIC asm_main
+
+ExitProcess proto stdcall, dwExitCode:dword
+GetStdHandle proto stdcall, nStdHandle : dword
+WriteFile proto stdcall, hFile : dword, buf : dword, count : dword, written : dword, overlapped : dword
+
+STD_INPUT_HANDLE equ - 10
+STD_OUTPUT_HANDLE equ - 11
+STD_ERROR_HANDLE equ - 12
+
 .data
-enter_msg : .asciiz	"\nbegin program\n"
-exit_msg : .asciiz "\nend program\n"
-true_msg : .asciiz "true"
-false_msg : .asciiz "false"
 
-# user string literals:
+stdout dd ?
+stdin dd ?
+stderr dd ?
 
-LOCALS_0 = -100
+enter_msg	db 'Begin program.', 10, 10
+enter_size	equ $ - enter_msg
+exit_msg	db 'End program.', 10
+exit_size equ $ - exit_msg
 
-.text
-.globl main
-# begin user procedures
+.code
 
-# source line #1
-# source line #2
-# source line #3
-# source line #4
-# source line #6
-# begin procedure main_0
-main_0:
-	addiu	$sp, -8			# space for saved registers
-	sw	$ra, 8($sp)			# save return so we can make calls
-	sw	$fp, 4($sp)			# preserve caller frame
-	add	$fp, $sp, $0			# create our frame
-	addiu	$sp, LOCALS_0			# space for local vars
-# source line #7
-	li	$t0, 0			# place a literal in register
-	sw	$t0, -52($fp)			# move literal to memory
-	lw	$t0, -52($fp)			# load op
-	sw	$t0, -4($fp)			# assignment
-# source line #8
-	while_1:			# before the while expression
-	li	$t0, 10			# place a literal in register
-	sw	$t0, -56($fp)			# move literal to memory
-	li	$t0, 0			# place a literal in register
-	sw	$t0, -60($fp)			# move literal to memory
-	lw	$t0, -4($fp)			# load left op
-	lw	$t1, -56($fp)			# load right op
-	slt	$t2, $t0, $t1			# binary op
-	sw	$t2, -60($fp)			# store result
-	lw	$t0, -60($fp)			# load if expression
-	beq	$t0, $0, if_2			# jump past when false
-# source line #9
-	lw	$t5, -4($fp)			# load index
-	sll	$t5, $t5, 2			# index to size
-	addu	$t5, $t5, -48			# final offset
-	addu	$t2, $fp, $t5			# array ref
-	sw	$t2, -64($fp)			# save address
-	lw	$t0, -4($fp)			# load op
-	lw	$t4, -64($fp)			# deref pointer
-	sw	$t0, 0($t4)			# assignment
-# source line #10
-	li	$t0, 1			# place a literal in register
-	sw	$t0, -68($fp)			# move literal to memory
-	li	$t0, 0			# place a literal in register
-	sw	$t0, -72($fp)			# move literal to memory
-	lw	$t0, -4($fp)			# load left op
-	lw	$t1, -68($fp)			# load right op
-	addu	$t2, $t0, $t1			# binary op
-	sw	$t2, -72($fp)			# store result
-	lw	$t0, -72($fp)			# load op
-	sw	$t0, -4($fp)			# assignment
-# source line #11
-	j	while_1			# jump to start of while
-	if_2:			# after the if block
-# source line #13
-	li	$t0, 0			# place a literal in register
-	sw	$t0, -76($fp)			# move literal to memory
-	lw	$t0, -76($fp)			# load op
-	sw	$t0, -4($fp)			# assignment
-# source line #14
-	while_3:			# before the while expression
-	li	$t0, 10			# place a literal in register
-	sw	$t0, -80($fp)			# move literal to memory
-	li	$t0, 0			# place a literal in register
-	sw	$t0, -84($fp)			# move literal to memory
-	lw	$t0, -4($fp)			# load left op
-	lw	$t1, -80($fp)			# load right op
-	slt	$t2, $t0, $t1			# binary op
-	sw	$t2, -84($fp)			# store result
-	lw	$t0, -84($fp)			# load if expression
-	beq	$t0, $0, if_4			# jump past when false
-# source line #15
-	lw	$t5, -4($fp)			# load index
-	sll	$t5, $t5, 2			# index to size
-	addu	$t5, $t5, -48			# final offset
-	addu	$t2, $fp, $t5			# array ref
-	sw	$t2, -88($fp)			# save address
-	li	$v0, 1			# write integer function
-	lw	$t4, -88($fp)			# load the integer
-	lw	$a0, 0($t4)			# load the integer
-	syscall			# do the write integer
-	li	$v0, 11			# write char function
-	li	$a0, 10			# ascii char
-	syscall			# do the write char
-# source line #16
-	li	$t0, 1			# place a literal in register
-	sw	$t0, -92($fp)			# move literal to memory
-	li	$t0, 0			# place a literal in register
-	sw	$t0, -96($fp)			# move literal to memory
-	lw	$t0, -4($fp)			# load left op
-	lw	$t1, -92($fp)			# load right op
-	addu	$t2, $t0, $t1			# binary op
-	sw	$t2, -96($fp)			# store result
-	lw	$t0, -96($fp)			# load op
-	sw	$t0, -4($fp)			# assignment
-# source line #17
-	j	while_3			# jump to start of while
-	if_4:			# after the if block
-# source line #18
-	lw	$ra, 8($fp)			# restore our return addr
-	lw	$fp, 4($fp)			# restore caller frame
-	addiu	$sp, 108			# restore locals space
-	jr	$ra			# 
-# end procedure main_0
+; function write_string
+; params: buffer, size
+; writes to stdout
+
+write_string proc
+push ebp
+mov ebp, esp
+sub esp, 4; written
+
+push 0; overlapped
+lea eax, [ebp - 4]
+push eax; &written
+mov eax, [ebp + 12]
+push eax; count
+mov eax, [ebp + 8]
+push eax; buffer
+mov eax, [stdout]
+push eax; hfile
+call WriteFile
+
+add esp, 4
+pop ebp
+ret 8
+write_string endp
+
+read_bool proc
+read_bool endp
+
+read_int proc
+read_int endp
+
+read_float proc
+read_float endp
 
 
-# end user procedures.
+literal_1	db	"hello world", 0
+literal_2	db	10, 0
 
-main:
-		# program entry point
-	addiu $sp, $sp, -12		# space for stack frame
-	addu $fp, $sp, $0		# init frame
-	sw $0 12($fp)	# initial pfp is null
-	li $v0, 4
-	la $a0, enter_msg
-	syscall		#print string
+main_0	proc			; begin user procedure
+mov	eax, 11			; load string size
+push	eax			; push string size
+lea	eax, literal_1			; load string location
+push	eax			; push string location
+call	write_string			; write the string
+mov	eax, 1			; load string size
+push	eax			; push string size
+lea	eax, literal_2			; load string location
+push	eax			; push string location
+call	write_string			; write the string
+ret
+main_0	endp			; end user procedure
+; function asm_init
+; paramaters: none.
+; initializes global state and prints a welcome message.
+
+asm_init proc
+mov eax, STD_OUTPUT_HANDLE
+push eax
+call GetStdHandle
+mov stdout, eax
+
+mov eax, STD_INPUT_HANDLE
+push eax
+call GetStdHandle
+mov stdin, eax
+
+mov eax, STD_ERROR_HANDLE
+push eax
+call GetStdHandle
+mov stderr, eax
+
+mov eax, enter_size
+push eax
+lea eax, enter_msg
+push eax
+call write_string
+ret
+asm_init endp
+
+asm_main proc
+push ebp
+mov ebp, esp
+
+call asm_init
 
 
-	addiu	$sp, $sp, -4			# space for parent fp
-	sw	$fp, 4($sp)			# push parent frame
-	jal	main_0			# call user procedure
-	addiu	$sp, $sp, 4			# pop params
+call	main_0			; call a user procedure
 
-	li $v0, 4
-	la $a0, exit_msg
-	syscall		# print string
+mov eax, exit_size
+push eax
+lea eax, exit_msg
+push eax
+call write_string
 
-	li $v0, 10
-	syscall		# exit program
+push 0
+call ExitProcess
+asm_main endp
 
+end
 
 

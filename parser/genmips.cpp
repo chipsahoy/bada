@@ -673,16 +673,8 @@ namespace {
 
 }
 
-extern Code* MakeX86Gen(std::string name);
 
-Code* MakeCodeGen(std::string name, OutputFormat type)
+Code* MakeCodeGen(std::string name)
 {
-	if (OutputFormat::MIPS == type) {
-		return new MipsCode(name);
-	}
-	if (OutputFormat::X86 == type) {
-		return MakeX86Gen(name);
-	}
-
-	return nullptr;
+	return new MipsCode(name);
 }
