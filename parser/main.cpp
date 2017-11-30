@@ -17,7 +17,7 @@ static void process(std::string filename)
 		return;
 	}
 	// Let the user know which file is being scanned now.
-	std::cout << "Parsing " << filename << std::endl;
+	std::cout << "compiling " << filename << std::endl;
 
 	// open a file to write the tree into.
 	std::ofstream output(filename + ".tree");

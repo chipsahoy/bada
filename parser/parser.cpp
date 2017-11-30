@@ -151,11 +151,18 @@ namespace {
 				FirstRule();
 				symbols.EndScope();
 				match(TokenType::eof);
-				_output << std::endl << symbols.ToString();
+				if(!_errorCount)
+					_output << std::endl << symbols.ToString();
 			}
 			catch (std::string errCaught) 
 			{
-				error = errCaught;
+				non_fatal(errCaught);
+			}
+			if (_errorCount)
+			{
+				_output << _errorCount << " errors.\n";
+				error = _output.str();
+				return "";
 			}
 			return _output.str();
 		}
@@ -645,6 +652,8 @@ namespace {
 				idnonterminal(er);
 				if(er.constant)
 					non_fatal("changing a constant");
+				if (!proc->params()[ix].out)
+					non_fatal("not an out param: #" + std::to_string(ix));
 				if(er.type != proc->params()[ix].type)
 					non_fatal("type mismatch parameter " + std::to_string(ix));
 				code.PassParameter(er, true);
@@ -654,6 +663,8 @@ namespace {
 				rule(58);
 				ExpRecord er;
 				expression(er);
+				if (proc->params()[ix].out)
+					non_fatal("missing 'out' param: #" + std::to_string(ix));
 				if (er.type != proc->params()[ix].type)
 					non_fatal("type mismatch parameter " + std::to_string(ix));
 				code.PassParameter(er, false);
