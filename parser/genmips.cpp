@@ -127,6 +127,9 @@ namespace {
 			std::string locals_size = "LOCALS_" +
 				std::to_string(symbol.offset());
 			_data << locals_size << " = " << _nextLocal << std::endl;
+			_data << "PARAM_SIZE_" << std::to_string(symbol.offset()) <<
+				" = " << _nextParam << std::endl;
+
 			int to_pop = _nextLocal - 8;
 
 			write("lw", "$ra", "8($fp)", "restore our return addr");
@@ -569,7 +572,6 @@ namespace {
 				Location loc(er.depth, er.offset, er.type, true);
 				// store address
 				write("addiu", "$sp", "$sp", "-4", "make space");
-				// todo: out
 				load_reg_address("$t0", loc, "load param");
 				write("sw", "$t0", "4($sp)", "push param");
 			}

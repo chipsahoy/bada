@@ -214,10 +214,6 @@ namespace {
 			//
 			proc.AddParam(p);
 
-			// Also, the parameter is a local variable once in the procedure
-			// body, so add it to the symbol table independently.
-			//
-			symbols.AddParam(p.name, p.type, code.Parameter(p.type), p.out);
 		}
 
 		// proc_defn 41: PROCTOK IDTOK paramlist
@@ -243,6 +239,18 @@ namespace {
 			symbols.BeginScope();
 			int saved = code.BeginScope();
 			paramlist(*proc);
+
+			// The parameters are local variable once in the procedure
+			// body, so add them to the symbol table.
+			// This was delayed until now because the locations have to be
+			// given right to left in order to be able to 
+			// push them left to right when making calls.
+			//
+			for (auto it = proc->params().rbegin(); it != proc->params().rend(); it++)
+			{
+				symbols.AddParam(it->name, it->type, code.Parameter(it->type), it->out);
+			}
+
 			match(TokenType::tok_is);
 			decls();
 			match(TokenType::tok_begin);
