@@ -225,6 +225,8 @@ namespace {
 			ExpRecord lop, ExpRecord rop)
 		{
 			std::string instruction;
+			bool compare = false;
+
 			switch (op[0])
 			{
 			case '+':
@@ -242,6 +244,12 @@ namespace {
 			case '/':
 				instruction = "div.s";
 				break;
+
+			case '<':
+			case '>':
+			case '=':
+				CompareFloat(op, dest, lop, rop);
+				return;
 			}
 
 			load_reg("$f0", lop, "load left op");
@@ -297,6 +305,12 @@ namespace {
 		virtual void BinaryOp(std::string op, ExpRecord dest,
 			ExpRecord lop, ExpRecord rop)
 		{
+			if (TokenType::tok_real == lop.type)
+			{
+				BinaryOpFloat(op, dest, lop, rop);
+				return;
+			}
+
 			std::string instruction;
 			bool invert = false;
 
@@ -603,7 +617,16 @@ namespace {
 				break;
 
 			case TokenType::literal_real:
+			{
 				er.type = TokenType::tok_real;
+				int loc = NextCodeLocation();
+				std::string label = "real_" + std::to_string(loc);
+				_data << label << ": .float " << lex << std::endl;
+				er = Location(0, LocalVariable(er.type), er.type);
+				write("lw", "$t0", label, "load a real const from glbl data");
+				store_reg("$t0", er, "move literal to memory");
+				return er;
+			}
 				break;
 			}
 			er = Location(0, LocalVariable(er.type), er.type);

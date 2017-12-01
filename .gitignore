@@ -262,3 +262,4 @@ __pycache__/
 /.~lock.variables.doc#
 *.tree
 /parser/assemble.bat
+/parser/qs.adb.asm
