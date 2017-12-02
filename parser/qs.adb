@@ -48,12 +48,14 @@ procedure main is
 		left : integer;
 		right : integer;
 		is_less : boolean;
+		continue : boolean;
 	begin
 		pivot := values(lower);
 		values(item_count) := pivot; -- add a sentinel so we can't run off end
 		left := lower + 1;
 		right := upper;
-		while(left < right) loop
+		continue := true; -- get do ... while() effect
+		while(continue) loop
 			compare_count := compare_count + 1;
 			while(values(right) > pivot) loop
 				compare_count := compare_count + 1;
@@ -67,7 +69,9 @@ procedure main is
 			end loop;
 
 			compare_count := compare_count + 1;
+			continue := false;
 			if(left < right) then
+				continue := true;
 				call swap(left, right);
 				left := left + 1;
 				right := right - 1;
@@ -77,6 +81,7 @@ procedure main is
 		-- left and right have crossed, so move pivot into place
 		-- and recurse.
 		call swap(lower, right); -- move pivot.
+
 		if((right - 1) > lower) then
 			call quicksort(lower, right - 1);
 		end if;
