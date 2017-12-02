@@ -263,3 +263,4 @@ __pycache__/
 *.tree
 /parser/assemble.bat
 /parser/qs.adb.asm
+*.asm

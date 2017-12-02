@@ -625,11 +625,12 @@ namespace {
 			match(TokenType::identifier);
 			int current_param = 0;
 			invoke_params(proc, current_param);
-			if (proc->params().size() != current_param)
+			if (proc && proc->params().size() != current_param)
 			{
 				non_fatal("wrong number of parameters for procedure");
 			}
-			code.CallProcedure(*proc, depth);
+			if(proc)
+				code.CallProcedure(*proc, depth);
 			match(TokenType::semicolon);
 		}
 
@@ -660,22 +661,29 @@ namespace {
 				idnonterminal(er);
 				if(er.constant)
 					non_fatal("changing a constant");
-				if (!proc->params()[ix].out)
-					non_fatal("not an out param: #" + std::to_string(ix));
-				if(er.type != proc->params()[ix].type)
-					non_fatal("type mismatch parameter " + std::to_string(ix));
-				code.PassParameter(er, true);
+				if (proc && (ix < (int)proc->params().size()))
+				{
+					if (proc && !proc->params()[ix].out)
+						non_fatal("not an out param: #" + std::to_string(ix));
+					else if (proc && (er.type != proc->params()[ix].type))
+						non_fatal("type mismatch parameter " + std::to_string(ix));
+					else code.PassParameter(er, true);
+				}
 				ix++;
 			}
 			else {
 				rule(58);
 				ExpRecord er;
 				expression(er);
-				if (proc->params()[ix].out)
-					non_fatal("missing 'out' param: #" + std::to_string(ix));
-				if (er.type != proc->params()[ix].type)
-					non_fatal("type mismatch parameter " + std::to_string(ix));
-				code.PassParameter(er, false);
+				if (proc && (ix < (int)proc->params().size()))
+				{
+					if (proc->params()[ix].out)
+						non_fatal("missing 'out' param: #" + std::to_string(ix));
+					else if (er.type != proc->params()[ix].type)
+						non_fatal("type mismatch parameter " + std::to_string(ix));
+					else
+						code.PassParameter(er, false);
+				}
 				ix++;
 			}
 		}
@@ -727,9 +735,16 @@ namespace {
 				std::string op = token().Lexeme();
 
 				match(TokenType::op_add);
+
 				term(er);
 				if (lop.type != er.type)
 					non_fatal("type mismatch");
+				if (lop.type == TokenType::tok_real)
+				{
+					if ("or" == op)
+						non_fatal("invalid operation on float. ");
+				}
+
 				ExpRecord result = code.Literal(lop.type, "0");
 				code.BinaryOp(op, result, lop, er);
 				er = result;
@@ -762,6 +777,11 @@ namespace {
 
 				if (lop.type != er.type)
 					non_fatal("type mismatch");
+				if (lop.type == TokenType::tok_real)
+				{
+					if (("and" == op) || ("mod" == op))
+						non_fatal("invalid operation on float. ");
+				}
 				ExpRecord result = code.Literal(lop.type, "0");
 				if ("and" == op)
 					code.BinaryOp(op, result, lop, er);

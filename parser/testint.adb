@@ -76,6 +76,13 @@ begin
 	call assert((7 mod z) = 1);
 	call assert((2 mod 5) = 2);
 
+	-- test precedence
+	call assert((1 + 2 * 3 - 4) = 3);
+
+	-- test bitwise
+	call assert((3 and 2) = 2);
+	call assert((3 or 6) = 7);
+
 	-- test in param
 	x := 22;
 	call testin(x);

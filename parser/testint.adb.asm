@@ -9,13 +9,17 @@ false_msg : .asciiz "false"
 
 literal_3:	.asciiz	" assert failed"	# a string
 LOCALS_1 = -12
+PARAM_SIZE_1 = 20
 LOCALS_4 = -4
+PARAM_SIZE_4 = 20
 LOCALS_5 = -12
+PARAM_SIZE_5 = 20
 literal_6:	.asciiz	"proving that assert(false) is detected:"	# a string
 literal_7:	.asciiz	"now on to the tests..."	# a string
 literal_8:	.asciiz	"writing integers"	# a string
 literal_9:	.asciiz	" tests taken."	# a string
-LOCALS_0 = -528
+LOCALS_0 = -604
+PARAM_SIZE_0 = 20
 
 .text
 .globl main
@@ -914,11 +918,112 @@ main_0:
 	jal	assert_1			# call user procedure
 	addiu	$sp, $sp, 8			# pop params
 # source line #80
-	li	$t0, 22			# place a literal in register
+	li	$t0, 1			# place a literal in register
 	sw	$t0, -496($fp)			# move literal to memory
-	lw	$t0, -496($fp)			# load op
+	li	$t0, 2			# place a literal in register
+	sw	$t0, -500($fp)			# move literal to memory
+	li	$t0, 3			# place a literal in register
+	sw	$t0, -504($fp)			# move literal to memory
+	li	$t0, 0			# place a literal in register
+	sw	$t0, -508($fp)			# move literal to memory
+	lw	$t0, -500($fp)			# load left op
+	lw	$t1, -504($fp)			# load right op
+	mult	$t0, $t1			# mult op
+	mflo	$t2			# get result from special reg
+	sw	$t2, -508($fp)			# store result
+	li	$t0, 0			# place a literal in register
+	sw	$t0, -512($fp)			# move literal to memory
+	lw	$t0, -496($fp)			# load left op
+	lw	$t1, -508($fp)			# load right op
+	addu	$t2, $t0, $t1			# binary op
+	sw	$t2, -512($fp)			# store result
+	li	$t0, 4			# place a literal in register
+	sw	$t0, -516($fp)			# move literal to memory
+	li	$t0, 0			# place a literal in register
+	sw	$t0, -520($fp)			# move literal to memory
+	lw	$t0, -512($fp)			# load left op
+	lw	$t1, -516($fp)			# load right op
+	sub	$t2, $t0, $t1			# binary op
+	sw	$t2, -520($fp)			# store result
+	li	$t0, 3			# place a literal in register
+	sw	$t0, -524($fp)			# move literal to memory
+	li	$t0, 0			# place a literal in register
+	sw	$t0, -528($fp)			# move literal to memory
+	lw	$t0, -520($fp)			# load left op
+	lw	$t1, -524($fp)			# load right op
+	sub	$t2, $t0, $t1			# binary op
+	sltu	$t2, $0, $t2			# are they not equal?
+	xori	$t2, $t2, 1			# now shows if equal
+	sw	$t2, -528($fp)			# store result
+	addiu	$sp, $sp, -4			# make space
+	lw	$t0, -528($fp)			# load param
+	sw	$t0, 4($sp)			# push param
+	addiu	$sp, $sp, -4			# space for parent fp
+	sw	$fp, 4($sp)			# push parent frame
+	jal	assert_1			# call user procedure
+	addiu	$sp, $sp, 8			# pop params
+# source line #83
+	li	$t0, 3			# place a literal in register
+	sw	$t0, -532($fp)			# move literal to memory
+	li	$t0, 2			# place a literal in register
+	sw	$t0, -536($fp)			# move literal to memory
+	li	$t0, 0			# place a literal in register
+	sw	$t0, -540($fp)			# move literal to memory
+	lw	$t0, -532($fp)			# load left op
+	lw	$t1, -536($fp)			# load right op
+	and	$t2, $t0, $t1			# binary op
+	sw	$t2, -540($fp)			# store result
+	li	$t0, 2			# place a literal in register
+	sw	$t0, -544($fp)			# move literal to memory
+	li	$t0, 0			# place a literal in register
+	sw	$t0, -548($fp)			# move literal to memory
+	lw	$t0, -540($fp)			# load left op
+	lw	$t1, -544($fp)			# load right op
+	sub	$t2, $t0, $t1			# binary op
+	sltu	$t2, $0, $t2			# are they not equal?
+	xori	$t2, $t2, 1			# now shows if equal
+	sw	$t2, -548($fp)			# store result
+	addiu	$sp, $sp, -4			# make space
+	lw	$t0, -548($fp)			# load param
+	sw	$t0, 4($sp)			# push param
+	addiu	$sp, $sp, -4			# space for parent fp
+	sw	$fp, 4($sp)			# push parent frame
+	jal	assert_1			# call user procedure
+	addiu	$sp, $sp, 8			# pop params
+# source line #84
+	li	$t0, 3			# place a literal in register
+	sw	$t0, -552($fp)			# move literal to memory
+	li	$t0, 6			# place a literal in register
+	sw	$t0, -556($fp)			# move literal to memory
+	li	$t0, 0			# place a literal in register
+	sw	$t0, -560($fp)			# move literal to memory
+	lw	$t0, -552($fp)			# load left op
+	lw	$t1, -556($fp)			# load right op
+	or	$t2, $t0, $t1			# binary op
+	sw	$t2, -560($fp)			# store result
+	li	$t0, 7			# place a literal in register
+	sw	$t0, -564($fp)			# move literal to memory
+	li	$t0, 0			# place a literal in register
+	sw	$t0, -568($fp)			# move literal to memory
+	lw	$t0, -560($fp)			# load left op
+	lw	$t1, -564($fp)			# load right op
+	sub	$t2, $t0, $t1			# binary op
+	sltu	$t2, $0, $t2			# are they not equal?
+	xori	$t2, $t2, 1			# now shows if equal
+	sw	$t2, -568($fp)			# store result
+	addiu	$sp, $sp, -4			# make space
+	lw	$t0, -568($fp)			# load param
+	sw	$t0, 4($sp)			# push param
+	addiu	$sp, $sp, -4			# space for parent fp
+	sw	$fp, 4($sp)			# push parent frame
+	jal	assert_1			# call user procedure
+	addiu	$sp, $sp, 8			# pop params
+# source line #87
+	li	$t0, 22			# place a literal in register
+	sw	$t0, -572($fp)			# move literal to memory
+	lw	$t0, -572($fp)			# load op
 	sw	$t0, -8($fp)			# assignment
-# source line #81
+# source line #88
 	addiu	$sp, $sp, -4			# make space
 	lw	$t0, -8($fp)			# load param
 	sw	$t0, 4($sp)			# push param
@@ -926,25 +1031,25 @@ main_0:
 	sw	$fp, 4($sp)			# push parent frame
 	jal	testin_5			# call user procedure
 	addiu	$sp, $sp, 8			# pop params
-# source line #82
+# source line #89
 	li	$t0, 22			# place a literal in register
-	sw	$t0, -500($fp)			# move literal to memory
+	sw	$t0, -576($fp)			# move literal to memory
 	li	$t0, 0			# place a literal in register
-	sw	$t0, -504($fp)			# move literal to memory
+	sw	$t0, -580($fp)			# move literal to memory
 	lw	$t0, -8($fp)			# load left op
-	lw	$t1, -500($fp)			# load right op
+	lw	$t1, -576($fp)			# load right op
 	sub	$t2, $t0, $t1			# binary op
 	sltu	$t2, $0, $t2			# are they not equal?
 	xori	$t2, $t2, 1			# now shows if equal
-	sw	$t2, -504($fp)			# store result
+	sw	$t2, -580($fp)			# store result
 	addiu	$sp, $sp, -4			# make space
-	lw	$t0, -504($fp)			# load param
+	lw	$t0, -580($fp)			# load param
 	sw	$t0, 4($sp)			# push param
 	addiu	$sp, $sp, -4			# space for parent fp
 	sw	$fp, 4($sp)			# push parent frame
 	jal	assert_1			# call user procedure
 	addiu	$sp, $sp, 8			# pop params
-# source line #85
+# source line #92
 	addiu	$sp, $sp, -4			# make space
 	la	$t0, -8($fp)			# load param
 	sw	$t0, 4($sp)			# push param
@@ -952,84 +1057,84 @@ main_0:
 	sw	$fp, 4($sp)			# push parent frame
 	jal	testout_4			# call user procedure
 	addiu	$sp, $sp, 8			# pop params
-# source line #86
+# source line #93
 	li	$t0, 21			# place a literal in register
-	sw	$t0, -508($fp)			# move literal to memory
+	sw	$t0, -584($fp)			# move literal to memory
 	li	$t0, 0			# place a literal in register
-	sw	$t0, -512($fp)			# move literal to memory
+	sw	$t0, -588($fp)			# move literal to memory
 	lw	$t0, -8($fp)			# load left op
-	lw	$t1, -508($fp)			# load right op
+	lw	$t1, -584($fp)			# load right op
 	sub	$t2, $t0, $t1			# binary op
 	sltu	$t2, $0, $t2			# are they not equal?
 	xori	$t2, $t2, 1			# now shows if equal
-	sw	$t2, -512($fp)			# store result
+	sw	$t2, -588($fp)			# store result
 	addiu	$sp, $sp, -4			# make space
-	lw	$t0, -512($fp)			# load param
+	lw	$t0, -588($fp)			# load param
 	sw	$t0, 4($sp)			# push param
 	addiu	$sp, $sp, -4			# space for parent fp
 	sw	$fp, 4($sp)			# push parent frame
 	jal	assert_1			# call user procedure
 	addiu	$sp, $sp, 8			# pop params
-# source line #89
+# source line #96
 	li	$v0, 4			# write string function
 	la	$a0, literal_8			# load string literal
 	syscall			# do the write string
 	li	$v0, 11			# write char function
 	li	$a0, 10			# ascii char
 	syscall			# do the write char
-# source line #90
+# source line #97
 	li	$t0, 0			# place a literal in register
-	sw	$t0, -516($fp)			# move literal to memory
+	sw	$t0, -592($fp)			# move literal to memory
 	li	$v0, 1			# write integer function
-	lw	$a0, -516($fp)			# load the integer
+	lw	$a0, -592($fp)			# load the integer
 	syscall			# do the write integer
 	li	$v0, 11			# write char function
 	li	$a0, 10			# ascii char
 	syscall			# do the write char
-# source line #91
+# source line #98
 	li	$v0, 1			# write integer function
 	lw	$a0, -4($fp)			# load the integer
 	syscall			# do the write integer
 	li	$v0, 11			# write char function
 	li	$a0, 10			# ascii char
 	syscall			# do the write char
-# source line #92
+# source line #99
 	li	$v0, 1			# write integer function
 	lw	$a0, -8($fp)			# load the integer
 	syscall			# do the write integer
 	li	$v0, 11			# write char function
 	li	$a0, 10			# ascii char
 	syscall			# do the write char
-# source line #93
+# source line #100
 	li	$t0, 15			# place a literal in register
-	sw	$t0, -520($fp)			# move literal to memory
+	sw	$t0, -596($fp)			# move literal to memory
 	li	$t0, 0			# place a literal in register
-	sw	$t0, -524($fp)			# move literal to memory
+	sw	$t0, -600($fp)			# move literal to memory
 	lw	$t0, -12($fp)			# load left op
-	lw	$t1, -520($fp)			# load right op
+	lw	$t1, -596($fp)			# load right op
 	addu	$t2, $t0, $t1			# binary op
-	sw	$t2, -524($fp)			# store result
+	sw	$t2, -600($fp)			# store result
 	li	$v0, 1			# write integer function
-	lw	$a0, -524($fp)			# load the integer
+	lw	$a0, -600($fp)			# load the integer
 	syscall			# do the write integer
 	li	$v0, 11			# write char function
 	li	$a0, 10			# ascii char
 	syscall			# do the write char
-# source line #95
+# source line #102
 	li	$v0, 1			# write integer function
 	lw	$a0, 0($fp)			# load the integer
 	syscall			# do the write integer
-# source line #96
+# source line #103
 	li	$v0, 4			# write string function
 	la	$a0, literal_9			# load string literal
 	syscall			# do the write string
 	li	$v0, 11			# write char function
 	li	$a0, 10			# ascii char
 	syscall			# do the write char
-# source line #97
+# source line #104
 	lw	$ra, 8($fp)			# restore our return addr
 	lw	$fp, 4($fp)			# restore caller frame
-	addiu	$sp, 536			# restore locals space
+	addiu	$sp, 612			# restore locals space
 	jr	$ra			# 
 # end procedure main_0
 
