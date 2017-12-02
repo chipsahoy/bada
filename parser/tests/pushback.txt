@@ -1,1 +1,0 @@
-identifier+integer+"literal"+9876+5.43210+:=+
